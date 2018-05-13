@@ -10,6 +10,7 @@ import io.ktor.server.netty.Netty
 import java.util.concurrent.TimeUnit
 
 fun main(args: Array<String>) {
+  // Bring up server
   val engine = embeddedServer(Netty, 8080) {
     routing {
       get("/") {
@@ -17,18 +18,29 @@ fun main(args: Array<String>) {
       }
     }
   }
-  Runtime.getRuntime().addShutdownHook(object : Thread() {
-    override fun run() {
-      println("Stopping server...")
-      engine.stop(5, 10, TimeUnit.SECONDS)
-      println("Server was stopped gracefully! Goodnight.")
-    }
-  })
   println("Starting Stak server...")
-  engine.start(wait = true)
+  engine.start()
+  println("Stak server started.")
+
+  try {
+    // Hold server awake
+    while (true) {
+      Thread.sleep(StakServer.THREAD_SLEEP_TIME)
+    }
+  } catch (e: InterruptedException) {
+    println("Server thread was interrupted, triggering shutdown.")
+  } finally {
+    // Shut down server
+    println("Stopping Stak server...")
+    engine.stop(200, 500, TimeUnit.MILLISECONDS)
+    println("Stak server stopped.")
+  }
 }
 
+/** Internal interface for starting the [StakServer]. */
 object StakServer {
+  const val THREAD_SLEEP_TIME = 5000L
+
   fun start() {
     main(emptyArray())
   }
