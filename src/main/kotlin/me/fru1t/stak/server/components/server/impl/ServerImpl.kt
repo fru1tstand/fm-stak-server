@@ -8,16 +8,16 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import me.fru1t.stak.server.components.server.Server
 import me.fru1t.stak.server.routing.IndexHandler
-import me.fru1t.stak.server.routing.UserHandler
+import me.fru1t.stak.server.routing.SessionHandler
 import me.fru1t.stak.server.routing.index
-import me.fru1t.stak.server.routing.user
+import me.fru1t.stak.server.routing.session
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 /** Default implementation of [Server]. */
 class ServerImpl @Inject constructor(
     private val indexHandler: IndexHandler,
-    private val userHandler: UserHandler) : Server {
+    private val sessionHandler: SessionHandler) : Server {
   companion object {
     private const val THREAD_SLEEP_TIME_MS = 5000L
   }
@@ -27,14 +27,14 @@ class ServerImpl @Inject constructor(
     val engine = embeddedServer(Netty, 8080) {
       install(Locations)
       install(Authentication) {
-        userHandler.registerAuthentication(this)
+        sessionHandler.registerAuthentication(this)
       }
       install(Routing) {
         // Enable console tracing
         trace { println(it.buildText()) }
 
         index(indexHandler)
-        user()
+        session(sessionHandler)
       }
     }
     engine.start()

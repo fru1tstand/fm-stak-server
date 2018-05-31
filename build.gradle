@@ -14,6 +14,7 @@ buildscript {
     ext.junit_version = '1.0.2'
     ext.junit_jupiter_version = '5.0.2'
     ext.dagger_version = '2.16'
+    ext.guava_version = '25.1-jre'
 
     repositories {
         mavenCentral()
@@ -35,10 +36,11 @@ dependencies {
     compile group: 'io.ktor', name: 'ktor-server-netty', version: ktor_version
     compile group: 'io.ktor', name: 'ktor-auth', version: ktor_version
     compile group: 'io.ktor', name: 'ktor-locations', version: ktor_version
-    compile group: 'com.google.guava', name: 'guava', version: '22.0'
+    compile group: 'com.google.guava', name: 'guava', version: guava_version
     compile group: 'com.google.dagger', name: 'dagger', version: dagger_version
     compile group: 'com.google.code.gson', name: 'gson', version: '2.8.5'
     compile group: 'io.github.microutils', name: 'kotlin-logging', version: '1.5.4'
+    compile group: 'org.mindrot', name: 'jbcrypt', version: '0.3m'
 
     kapt "com.google.dagger:dagger-compiler:$dagger_version"
 
@@ -46,6 +48,7 @@ dependencies {
     testCompile group: 'com.google.truth', name: 'truth', version: '0.33'
     testCompile group: 'com.nhaarman', name: 'mockito-kotlin', version: '1.5.0'
     testCompile group: 'io.ktor', name: 'ktor-server-test-host', version: ktor_version
+    testCompile group: 'com.google.guava', name: 'guava-testlib', version: guava_version
 
     kaptTest "com.google.dagger:dagger-compiler:$dagger_version"
 
