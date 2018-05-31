@@ -1,6 +1,7 @@
 package me.fru1t.stak.server
 
 import me.fru1t.stak.server.components.server.Server
+import me.fru1t.stak.server.dagger.DaggerStakServerComponent
 import javax.inject.Inject
 
 // TODO(#1): Consume arguments to parse out binding port and ip.

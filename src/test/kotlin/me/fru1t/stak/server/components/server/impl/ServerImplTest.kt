@@ -1,8 +1,8 @@
 package me.fru1t.stak.server.components.server.impl
 
 import dagger.Component
-import me.fru1t.stak.server.ComponentsModule
-import me.fru1t.stak.server.StakServerModule
+import me.fru1t.stak.server.dagger.ComponentsModule
+import me.fru1t.stak.server.dagger.StakServerModule
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.net.InetSocketAddress

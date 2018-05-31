@@ -1,4 +1,4 @@
-package me.fru1t.stak.server
+package me.fru1t.stak.server.dagger
 
 import dagger.Binds
 import dagger.Module

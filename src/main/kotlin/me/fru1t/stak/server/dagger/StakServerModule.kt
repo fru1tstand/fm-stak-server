@@ -1,9 +1,10 @@
-package me.fru1t.stak.server
+package me.fru1t.stak.server.dagger
 
 import com.google.common.base.Ticker
 import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
+import me.fru1t.stak.server.Constants
 import javax.inject.Named
 import javax.inject.Singleton
 
