@@ -10,11 +10,13 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.routing.routing
 import io.ktor.server.testing.TestApplicationEngine
 import io.ktor.server.testing.handleRequest
-import io.ktor.server.testing.setBody
 import io.ktor.server.testing.withTestApplication
 import me.fru1t.stak.server.components.session.Session
 import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.UserPrincipal
+import me.fru1t.stak.server.testing.ktor.addBasicAuthorizationHeader
+import me.fru1t.stak.server.testing.ktor.handleFormRequest
+import me.fru1t.stak.server.testing.ktor.setBody
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
@@ -23,13 +25,8 @@ import org.mockito.MockitoAnnotations
 class SessionHandlerTest {
   companion object {
     private val TEST_VALID_USER_PRINCIPAL_RESULT = Result(UserPrincipal("username", "sometoken"))
-
-    private const val AUTHORIZATION_HEADER = "Authorization"
-    private const val AUTHORIZATION_HEADER_VALUE = "Basic dGVzdDp0ZXN0"
-
-    private const val CONTENT_TYPE_HEADER = "content-type"
-    private const val CONTENT_TYPE_HEADER_VALUE = "application/x-www-form-urlencoded"
   }
+
   @Mock private lateinit var mockSession: Session
   private lateinit var sessionHandler: SessionHandler
 
@@ -42,12 +39,12 @@ class SessionHandlerTest {
   @Test fun registerAuthentication_form_invalidUserParamValue() = withSessionHandler {
     whenever(mockSession.getActiveSession(any())).thenReturn(TEST_VALID_USER_PRINCIPAL_RESULT)
 
-    val result = handleRequest(HttpMethod.Delete, "/session") {
-      addHeader(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE)
-      setBody(
-          "${SessionHandler.SESSION_USER_PARAM_NAME}=invalid" +
-              "&${SessionHandler.SESSION_PASS_PARAM_NAME}=" +
-              TEST_VALID_USER_PRINCIPAL_RESULT.value!!.token)
+    val result = handleFormRequest(HttpMethod.Delete, "/session") {
+      setBody {
+        addParameter(SessionHandler.SESSION_USER_PARAM_NAME, "invalid")
+        addParameter(
+            SessionHandler.SESSION_PASS_PARAM_NAME, TEST_VALID_USER_PRINCIPAL_RESULT.value!!.token)
+      }
     }
 
     assertThat(result.response.status()).isEqualTo(HttpStatusCode.Unauthorized)
@@ -56,11 +53,12 @@ class SessionHandlerTest {
   @Test fun registerAuthentication_form_invalidActiveSession() = withSessionHandler {
     whenever(mockSession.getActiveSession(any())).thenReturn(Result(error = "error!"))
 
-    val result = handleRequest(HttpMethod.Delete, "/session") {
-      addHeader(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE)
-      setBody(
-          "${SessionHandler.SESSION_USER_PARAM_NAME}=${SessionHandler.SESSION_USER_PARAM_VALUE}" +
-              "&${SessionHandler.SESSION_PASS_PARAM_NAME}=invalid")
+    val result = handleFormRequest(HttpMethod.Delete, "/session") {
+      setBody {
+        addParameter(
+            SessionHandler.SESSION_USER_PARAM_NAME, SessionHandler.SESSION_USER_PARAM_VALUE)
+        addParameter(SessionHandler.SESSION_PASS_PARAM_NAME, "invalid")
+      }
     }
 
     assertThat(result.response.status()).isEqualTo(HttpStatusCode.Unauthorized)
@@ -70,7 +68,7 @@ class SessionHandlerTest {
     whenever(mockSession.login(any())).thenReturn(TEST_VALID_USER_PRINCIPAL_RESULT)
 
     val result = handleRequest(HttpMethod.Post, "/session") {
-      addHeader(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER_VALUE)
+      addBasicAuthorizationHeader("test username", "test password")
     }
 
     assertThat(result.response.content).isEqualTo(TEST_VALID_USER_PRINCIPAL_RESULT.value!!.token)
@@ -80,8 +78,8 @@ class SessionHandlerTest {
   @Test fun login_invalidCredentials() = withSessionHandler {
     whenever(mockSession.login(any())).thenReturn(Result(error = "error!"))
 
-    val result = handleRequest(HttpMethod.Post, "/session") {
-      addHeader(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER_VALUE)
+    val result = handleFormRequest(HttpMethod.Post, "/session") {
+      addBasicAuthorizationHeader("test username", "test password")
     }
 
     assertThat(result.response.status()).isEqualTo(HttpStatusCode.Unauthorized)
@@ -90,12 +88,14 @@ class SessionHandlerTest {
   @Test fun logout() = withSessionHandler {
     whenever(mockSession.getActiveSession(any())).thenReturn(TEST_VALID_USER_PRINCIPAL_RESULT)
 
-    val result = handleRequest(HttpMethod.Delete, "/session") {
-      addHeader(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE)
-      setBody(
-          "${SessionHandler.SESSION_USER_PARAM_NAME}=${SessionHandler.SESSION_USER_PARAM_VALUE}" +
-              "&${SessionHandler.SESSION_PASS_PARAM_NAME}=" +
-              TEST_VALID_USER_PRINCIPAL_RESULT.value!!.token)
+    val result = handleFormRequest(HttpMethod.Delete, "/session") {
+      addBasicAuthorizationHeader("test username", "test password")
+      setBody {
+        addParameter(
+            SessionHandler.SESSION_USER_PARAM_NAME, SessionHandler.SESSION_USER_PARAM_VALUE)
+        addParameter(
+            SessionHandler.SESSION_PASS_PARAM_NAME, TEST_VALID_USER_PRINCIPAL_RESULT.value!!.token)
+      }
     }
 
     assertThat(result.response.status()).isEqualTo(HttpStatusCode.OK)
