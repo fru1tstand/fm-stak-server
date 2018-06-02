@@ -12,3 +12,13 @@ class UserTest {
     assertThat(user.displayName).isEqualTo("test name")
   }
 }
+
+class UserCreateTest {
+  @Test fun default() {
+    val userCreate = UserCreate(username = "test", password = "test password", displayName = "name")
+
+    assertThat(userCreate.username).isEqualTo("test")
+    assertThat(userCreate.password).isEqualTo("test password")
+    assertThat(userCreate.displayName).isEqualTo("name")
+  }
+}
