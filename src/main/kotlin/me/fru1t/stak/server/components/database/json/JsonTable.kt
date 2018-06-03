@@ -12,7 +12,8 @@ import kotlin.reflect.KClass
 /**
  * Represents both the metadata and contents of a file-based JSON table. Tables are lazy loaded from
  * disk and must be manually saved on modification. A single [JsonTable] corresponds to a single
- * file on disk which is represented in Json with the root element as an array of [T].
+ * file on disk which is represented in Json with the root element as a map of a [String] primary
+ * key (arbitrarily defined) mapped to [T].
  *
  * @constructor creates a new [JsonTable] located on disk at [tableFilePathAndName] (which accepts
  * both relative and absolute paths), storing [tableModelClass]es.
@@ -22,16 +23,17 @@ class JsonTable<T : Any>(
     private val tableModelClass: KClass<T>,
     private val gson: Gson) {
 
-  val contents: MutableList<T> by lazy {
+  val contents: MutableMap<String, T> by lazy {
     if (!Files.exists(tableFilePathAndName)) {
-      return@lazy ArrayList<T>()
+      return@lazy HashMap<String, T>()
     }
 
     try {
       @Suppress("UNCHECKED_CAST")
-      return@lazy gson.fromJson<ArrayList<T>>(
+      return@lazy gson.fromJson<HashMap<String, T>>(
           Files.newBufferedReader(tableFilePathAndName, JsonDatabase.CHARSET),
-         TypeToken.getParameterized(ArrayList::class.java, tableModelClass.java).type)
+          TypeToken.getParameterized(
+              HashMap::class.java, String::class.java, tableModelClass.java).type)
     } catch (e: JsonParseException) {
       JsonDatabase.logger.error(e) {
         "Couldn't json decode ${tableModelClass.simpleName} table file at " +
@@ -39,7 +41,7 @@ class JsonTable<T : Any>(
       }
     }
 
-    return@lazy ArrayList<T>()
+    return@lazy HashMap<String, T>()
   }
 
   /** Attempts to commit the current state of this [JsonTable] to disk. */

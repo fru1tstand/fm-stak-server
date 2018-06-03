@@ -42,26 +42,27 @@ class JsonTableTest {
   }
 
   @Test fun contents() {
-    val testContents = listOf(TestModel("contents 1"), TestModel("contents 2"))
+    val testContents = mapOf(Pair("1", TestModel("contents 1")), Pair("2", TestModel("contents 2")))
     writeToTestTable(TEST_TABLE_PATH, GSON.toJson(testContents))
 
     val table = createJsonTable(TEST_TABLE_PATH)
 
-    assertThat(table.contents).containsExactlyElementsIn(testContents)
+    assertThat(table.contents).containsExactlyEntriesIn(testContents)
   }
 
   @Test fun writeToDisk() {
-    val preContents = listOf(TestModel("contents 1"), TestModel("contents 2"))
+    val preContents = mapOf(Pair("1", TestModel("contents 1")), Pair("2", TestModel("contents 2")))
     writeToTestTable(TEST_TABLE_PATH, GSON.toJson(preContents))
 
     val table = createJsonTable(TEST_TABLE_PATH)
-    table.contents.add(TestModel("contents 3"))
-    table.contents.removeAt(0)
+    table.contents["3"] = TestModel("contents 3")
+    table.contents.remove("1")
     val writeResult = table.writeToDisk()
     assertThat(writeResult.result!!).isTrue()
 
     val resultTable = createJsonTable(TEST_TABLE_PATH)
     assertThat(resultTable.contents)
-        .containsExactlyElementsIn(listOf(TestModel("contents 2"), TestModel("contents 3")))
+        .containsExactlyEntriesIn(
+            mapOf(Pair("2", TestModel("contents 2")), Pair("3", TestModel("contents 3"))))
   }
 }

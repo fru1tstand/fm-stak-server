@@ -32,7 +32,7 @@ class JsonDatabase @Inject constructor(
   private val userTable = getJsonTable(USER_TABLE_FILE, User::class)
 
   override fun getUserByUsername(username: String): DatabaseResult<User> =
-    userTable.contents.singleOrNull { it.username == username }
+    userTable.contents[username]
         ?.let { DatabaseResult(result = it) }
         ?: DatabaseResult(error = "User $username not found.")
 

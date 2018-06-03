@@ -30,7 +30,7 @@ class JsonDatabaseTest {
 
   @Test fun getUserByUsername() {
     val testUser = User("TestUsername", "", "Test Display Name")
-    val users = mutableListOf(testUser)
+    val users = mutableMapOf(Pair(testUser.username, testUser))
     writeToTestTable(TEST_USER_TABLE_PATH, GSON.toJson(users))
 
     val result = jsonDatabase.getUserByUsername(testUser.username).result!!
