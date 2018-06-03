@@ -3,6 +3,8 @@ package me.fru1t.stak.server.components.database.json
 import com.google.gson.Gson
 import com.google.gson.JsonParseException
 import com.google.gson.reflect.TypeToken
+import me.fru1t.stak.server.components.database.DatabaseResult
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.reflect.KClass
@@ -38,5 +40,15 @@ class JsonTable<T : Any>(
     }
 
     return@lazy ArrayList<T>()
+  }
+
+  /** Attempts to commit the current state of this [JsonTable] to disk. */
+  fun writeToDisk(): DatabaseResult<Boolean> {
+    try {
+      Files.write(tableFilePathAndName, gson.toJson(contents).toByteArray(JsonDatabase.CHARSET))
+    } catch(e: IOException) {
+      return DatabaseResult(result = false, error = e.message, isDatabaseError = true)
+    }
+    return DatabaseResult(result = true)
   }
 }

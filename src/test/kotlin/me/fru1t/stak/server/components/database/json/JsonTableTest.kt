@@ -49,4 +49,19 @@ class JsonTableTest {
 
     assertThat(table.contents).containsExactlyElementsIn(testContents)
   }
+
+  @Test fun writeToDisk() {
+    val preContents = listOf(TestModel("contents 1"), TestModel("contents 2"))
+    writeToTestTable(TEST_TABLE_PATH, GSON.toJson(preContents))
+
+    val table = createJsonTable(TEST_TABLE_PATH)
+    table.contents.add(TestModel("contents 3"))
+    table.contents.removeAt(0)
+    val writeResult = table.writeToDisk()
+    assertThat(writeResult.result!!).isTrue()
+
+    val resultTable = createJsonTable(TEST_TABLE_PATH)
+    assertThat(resultTable.contents)
+        .containsExactlyElementsIn(listOf(TestModel("contents 2"), TestModel("contents 3")))
+  }
 }
