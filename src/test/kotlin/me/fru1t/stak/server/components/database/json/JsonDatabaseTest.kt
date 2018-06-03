@@ -2,7 +2,6 @@ package me.fru1t.stak.server.components.database.json
 
 import com.google.common.truth.Truth.assertThat
 import com.google.gson.Gson
-import me.fru1t.stak.server.components.database.json.models.UserTable
 import me.fru1t.stak.server.models.User
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -31,22 +30,12 @@ class JsonDatabaseTest {
 
   @Test fun getUserByUsername() {
     val testUser = User("TestUsername", "", "Test Display Name")
-    val userTable = UserTable(mutableListOf(testUser))
-    writeToTestTable(TEST_USER_TABLE_PATH, GSON.toJson(userTable))
+    val users = mutableListOf(testUser)
+    writeToTestTable(TEST_USER_TABLE_PATH, GSON.toJson(users))
 
     val result = jsonDatabase.getUserByUsername(testUser.username).result!!
 
     assertThat(result).isEqualTo(testUser)
-  }
-
-  @Test fun getUserByUsername_jsonError() {
-    writeToTestTable(TEST_USER_TABLE_PATH, "invalid { json")
-
-    val result = jsonDatabase.getUserByUsername("test")
-
-    assertThat(result.result).isNull()
-    assertThat(result.isDatabaseError).isFalse()
-    assertThat(result.error).contains("not found")
   }
 
   @Test fun getUserByUsername_notFound() {
