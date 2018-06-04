@@ -7,20 +7,14 @@ import io.ktor.routing.routing
 import io.ktor.server.testing.contentType
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
-import me.fru1t.stak.server.components.example.Example
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mock
-import org.mockito.MockitoAnnotations
 
 class IndexHandlerTest {
-  @Mock private lateinit var mockExample: Example
-
   private lateinit var indexHandler: IndexHandler
 
   @BeforeEach internal fun setUp() {
-    MockitoAnnotations.initMocks(this)
-    indexHandler = IndexHandler(mockExample)
+    indexHandler = IndexHandler()
   }
 
   @Test fun catchAll() = withTestApplication {
