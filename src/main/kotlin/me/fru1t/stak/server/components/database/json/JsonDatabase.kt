@@ -4,6 +4,7 @@ import com.google.common.annotations.VisibleForTesting
 import com.google.gson.Gson
 import me.fru1t.stak.server.Constants
 import me.fru1t.stak.server.components.database.Database
+import me.fru1t.stak.server.components.database.DatabaseOperationResult
 import me.fru1t.stak.server.components.database.DatabaseResult
 import me.fru1t.stak.server.models.User
 import mu.KLogging
@@ -35,6 +36,53 @@ class JsonDatabase @Inject constructor(
     userTable.contents[username]
         ?.let { DatabaseResult(result = it) }
         ?: DatabaseResult(error = "User $username not found.")
+
+  override fun createUser(user: User): DatabaseOperationResult {
+    if (userTable.contents.containsKey(user.username)) {
+      return DatabaseOperationResult(error = "User ${user.username} already exists.")
+    }
+
+    userTable.contents[user.username] = user
+
+    return userTable.writeToDisk()
+  }
+
+  override fun deleteUser(username: String): DatabaseOperationResult {
+    if (!userTable.contents.containsKey(username)) {
+      return DatabaseOperationResult(error = "User $username doesn't exist.")
+    }
+
+    userTable.contents.remove(username)
+
+    return userTable.writeToDisk()
+  }
+
+  override fun updateUser(oldUser: User, newUser: User): DatabaseOperationResult {
+    if (!userTable.contents.containsKey(oldUser.username)) {
+      return DatabaseOperationResult(error = "User ${oldUser.username} doesn't exist.")
+    }
+
+    // Don't do any operations if the user data is the same
+    if (oldUser == newUser) {
+      return DatabaseOperationResult(didSucceed = true)
+    }
+
+    if (oldUser.username != newUser.username) {
+      // Username change, check that the new username doesn't already exist before adding
+      if (userTable.contents.containsKey(newUser.username)) {
+        return DatabaseOperationResult(
+            error = "Can't change ${oldUser.username}'s username as the requested username " +
+                "${newUser.username} already exists.")
+      }
+      userTable.contents[newUser.username] = newUser
+      userTable.contents.remove(oldUser.username)
+    } else {
+      // Username didn't change, just do a replacement
+      userTable.contents.replace(newUser.username, newUser)
+    }
+
+    return userTable.writeToDisk()
+  }
 
   /** Creates a [JsonTable] for the given [tableFileName] and [tableModelClass]. */
   private fun <T : Any> getJsonTable(tableFileName: String, tableModelClass: KClass<T>) =

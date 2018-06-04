@@ -35,6 +35,7 @@ class JsonTable<T : Any>(
           Files.newBufferedReader(tableFilePathAndName, JsonDatabase.CHARSET),
           TypeToken.getParameterized(
               HashMap::class.java, String::class.java, tableModelClass.java).type)
+          ?: HashMap()
     } catch (e: JsonParseException) {
       JsonDatabase.logger.error(e) {
         "Couldn't json decode ${tableModelClass.simpleName} table file at " +
