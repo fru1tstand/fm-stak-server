@@ -58,7 +58,7 @@ class JsonTableTest {
     table.contents["3"] = TestModel("contents 3")
     table.contents.remove("1")
     val writeResult = table.writeToDisk()
-    assertThat(writeResult.result!!).isTrue()
+    assertThat(writeResult.didSucceed).isTrue()
 
     val resultTable = createJsonTable(TEST_TABLE_PATH)
     assertThat(resultTable.contents)

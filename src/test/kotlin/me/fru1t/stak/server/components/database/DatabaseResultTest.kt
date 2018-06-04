@@ -12,3 +12,13 @@ class DatabaseResultTest {
     assertThat(result.isDatabaseError).isFalse()
   }
 }
+
+class DatabaseOperationResultTest {
+  @Test fun default() {
+    val result = DatabaseOperationResult()
+
+    assertThat(result.didSucceed).isFalse()
+    assertThat(result.error).isNull()
+    assertThat(result.isDatabaseError).isFalse()
+  }
+}

@@ -17,7 +17,6 @@ class ResultTest {
     var code: String? = null
     val result = Result<Any>(error = "test error").withCode { code = it }
 
-    assertThat(code).isNotEmpty()
-    assertThat(result.error).contains(code)
+    assertThat(result.error).contains(code!!)
   }
 }
