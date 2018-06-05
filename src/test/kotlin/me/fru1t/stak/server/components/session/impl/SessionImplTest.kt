@@ -7,10 +7,10 @@ import io.ktor.auth.UserPasswordCredential
 import io.ktor.http.HttpStatusCode
 import me.fru1t.stak.server.components.database.Database
 import me.fru1t.stak.server.components.database.DatabaseResult
+import me.fru1t.stak.server.components.security.impl.FakeSecurity
 import me.fru1t.stak.server.models.User
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mindrot.jbcrypt.BCrypt
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import java.util.concurrent.TimeUnit
@@ -19,27 +19,32 @@ class SessionImplTest {
   companion object {
     private const val TEST_VALID_USERNAME = "test-valid-username"
     private const val TEST_VALID_PASSWORD = "test-valid-password"
-    private val TEST_VALID_PASSWORD_HASH = BCrypt.hashpw(TEST_VALID_PASSWORD, BCrypt.gensalt(12))
     private const val TEST_SESSION_TIMEOUT_HOURS = 1L
   }
 
   @Mock private lateinit var mockDatabase: Database
+  private lateinit var fakeSecurity: FakeSecurity
   private lateinit var fakeTicker: FakeTicker
   private lateinit var sessionImpl: SessionImpl
+
+  private lateinit var testValidPasswordHash: String
 
   @BeforeEach internal fun setUp() {
     MockitoAnnotations.initMocks(this)
 
+    fakeTicker = FakeTicker()
+    fakeSecurity = FakeSecurity()
+
+    testValidPasswordHash = fakeSecurity.hash(TEST_VALID_PASSWORD)
     whenever(mockDatabase.getUserByUsername(TEST_VALID_USERNAME))
         .thenReturn(
             DatabaseResult(
                 result = User(
                     username = TEST_VALID_USERNAME,
-                    passwordHash = TEST_VALID_PASSWORD_HASH,
+                    passwordHash = testValidPasswordHash,
                     displayName = "Test Name")))
 
-    fakeTicker = FakeTicker()
-    sessionImpl = SessionImpl(mockDatabase, TEST_SESSION_TIMEOUT_HOURS, fakeTicker)
+    sessionImpl = SessionImpl(mockDatabase, TEST_SESSION_TIMEOUT_HOURS, fakeSecurity, fakeTicker)
   }
 
   @Test fun login() {
