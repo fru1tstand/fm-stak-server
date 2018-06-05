@@ -4,6 +4,8 @@ import dagger.Binds
 import dagger.Module
 import me.fru1t.stak.server.components.database.Database
 import me.fru1t.stak.server.components.database.json.JsonDatabase
+import me.fru1t.stak.server.components.security.Security
+import me.fru1t.stak.server.components.security.impl.SecurityImpl
 import me.fru1t.stak.server.components.server.Server
 import me.fru1t.stak.server.components.server.impl.ServerImpl
 import me.fru1t.stak.server.components.session.Session
@@ -16,4 +18,5 @@ abstract class ComponentsModule {
   @Binds @Singleton abstract fun bindServer(serverImpl: ServerImpl): Server
   @Binds @Singleton abstract fun bindDatabase(jsonDatabase: JsonDatabase): Database
   @Binds @Singleton abstract fun bindSession(sessionImpl: SessionImpl): Session
+  @Binds @Singleton abstract fun bindSecurity(securityImpl: SecurityImpl): Security
 }
