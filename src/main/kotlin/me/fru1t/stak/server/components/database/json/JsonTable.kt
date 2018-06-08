@@ -5,6 +5,7 @@ import com.google.gson.JsonParseException
 import com.google.gson.reflect.TypeToken
 import me.fru1t.stak.server.components.database.DatabaseOperationResult
 import me.fru1t.stak.server.components.database.DatabaseResult
+import mu.KLogging
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -23,6 +24,7 @@ class JsonTable<T : Any>(
     private val tableFilePathAndName: Path,
     private val tableModelClass: KClass<T>,
     private val gson: Gson) {
+  companion object : KLogging()
 
   val contents: MutableMap<String, T> by lazy {
     if (!Files.exists(tableFilePathAndName)) {
@@ -37,7 +39,7 @@ class JsonTable<T : Any>(
               HashMap::class.java, String::class.java, tableModelClass.java).type)
           ?: HashMap()
     } catch (e: JsonParseException) {
-      JsonDatabase.logger.error(e) {
+      logger.error(e) {
         "Couldn't json decode ${tableModelClass.simpleName} table file at " +
             "${tableFilePathAndName.normalize()}."
       }
@@ -51,6 +53,10 @@ class JsonTable<T : Any>(
     try {
       Files.write(tableFilePathAndName, gson.toJson(contents).toByteArray(JsonDatabase.CHARSET))
     } catch(e: IOException) {
+      logger.error(e) {
+        "Couldn't write table ${tableModelClass.simpleName} to disk at " +
+            "${tableFilePathAndName.normalize()}."
+      }
       return DatabaseOperationResult(error = e.message, isDatabaseError = true)
     }
     return DatabaseOperationResult(didSucceed = true)
