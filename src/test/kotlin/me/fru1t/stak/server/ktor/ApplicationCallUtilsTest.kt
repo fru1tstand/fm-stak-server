@@ -55,7 +55,12 @@ class ApplicationCallUtilsTest {
     val responseResult =
       Result(value = "This is a successful result", httpStatusCode = HttpStatusCode.Accepted)
     application.routing {
-      get("/") { call.respondResult(responseResult, { responseText }, responseType) }
+      get("/") {
+        call.respondResult(
+            responseResult,
+            { if (it == responseResult.value) responseText else "fail" },
+            responseType)
+      }
     }
 
     val result = handleRequest(HttpMethod.Get, "/")

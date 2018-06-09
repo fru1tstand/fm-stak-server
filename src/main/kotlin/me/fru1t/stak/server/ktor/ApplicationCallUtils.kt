@@ -13,13 +13,15 @@ import me.fru1t.stak.server.models.Result
  * output of [successText] with content type [successContentType]. If the [result] was unsuccessful,
  * the response body will be an empty string with the content type [ContentType.Text.Plain].
  */
-suspend fun ApplicationCall.respondResult(
-    result: Result<*>,
-    successText: () -> String = { result.value?.toString() ?: "" },
+suspend fun <T> ApplicationCall.respondResult(
+    result: Result<T>,
+    successText: (T?) -> String = { it?.toString() ?: "" },
     successContentType: ContentType = ContentType.Text.Plain) {
   if (result.httpStatusCode.isSuccess()) {
     respondText(
-        text = successText(), contentType = successContentType, status = result.httpStatusCode)
+        text = successText(result.value),
+        contentType = successContentType,
+        status = result.httpStatusCode)
   } else {
     respondText(text = "", contentType = ContentType.Text.Plain, status = result.httpStatusCode)
   }
