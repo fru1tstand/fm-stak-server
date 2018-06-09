@@ -33,15 +33,12 @@ class SessionImpl @Inject constructor(
   override fun login(userPasswordCredential: UserPasswordCredential): Result<UserPrincipal> {
     val userResult = database.getUserByUsername(userPasswordCredential.name)
     if (userResult.error != null && userResult.isDatabaseError) {
-      return Result<UserPrincipal>(
-          error = "An internal error occurred.",
-          httpStatusCode = HttpStatusCode.InternalServerError)
-          .withCode { logger.error { "Database error: ${userResult.error}; Code: $it" } }
+      logger.error { "Database error: ${userResult.error}" }
+      return Result(httpStatusCode = HttpStatusCode.InternalServerError)
     }
 
     if (!security.equals(userPasswordCredential.password, userResult.result?.passwordHash)) {
-      return Result(
-          error = "Invalid username or password", httpStatusCode = HttpStatusCode.Unauthorized)
+      return Result(httpStatusCode = HttpStatusCode.Unauthorized)
     }
 
     val userPrincipal = UserPrincipal(
@@ -59,6 +56,7 @@ class SessionImpl @Inject constructor(
   }
 
   override fun getActiveSession(token: String): Result<UserPrincipal> =
-    activeSessions.getIfPresent(token)?.let { Result(value = it) }
-        ?: Result(error = "Invalid session token.", httpStatusCode = HttpStatusCode.Unauthorized)
+    activeSessions.getIfPresent(token)
+        ?.let { Result(value = it) }
+        ?: Result(httpStatusCode = HttpStatusCode.Unauthorized)
 }

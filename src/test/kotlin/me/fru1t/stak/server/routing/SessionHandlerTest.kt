@@ -51,7 +51,8 @@ class SessionHandlerTest {
   }
 
   @Test fun registerAuthentication_form_invalidActiveSession() = withSessionHandler {
-    whenever(mockSession.getActiveSession(any())).thenReturn(Result(error = "error!"))
+    whenever(mockSession.getActiveSession(any()))
+        .thenReturn(Result(httpStatusCode = HttpStatusCode.Unauthorized))
 
     val result = handleFormRequest(HttpMethod.Delete, "/session") {
       setBody {
@@ -76,7 +77,8 @@ class SessionHandlerTest {
   }
 
   @Test fun login_invalidCredentials() = withSessionHandler {
-    whenever(mockSession.login(any())).thenReturn(Result(error = "error!"))
+    whenever(mockSession.login(any()))
+        .thenReturn(Result(httpStatusCode = HttpStatusCode.Unauthorized))
 
     val result = handleFormRequest(HttpMethod.Post, "/session") {
       addBasicAuthorizationHeader("test username", "test password")

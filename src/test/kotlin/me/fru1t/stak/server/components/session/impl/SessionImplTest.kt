@@ -5,6 +5,7 @@ import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.whenever
 import io.ktor.auth.UserPasswordCredential
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.isSuccess
 import me.fru1t.stak.server.components.database.Database
 import me.fru1t.stak.server.components.database.DatabaseResult
 import me.fru1t.stak.server.components.security.impl.FakeSecurity
@@ -50,7 +51,7 @@ class SessionImplTest {
   @Test fun login() {
     val result = sessionImpl.login(UserPasswordCredential(TEST_VALID_USERNAME, TEST_VALID_PASSWORD))
 
-    assertThat(result.error).isNull()
+    assertThat(result.httpStatusCode.isSuccess()).isTrue()
     assertThat(result.value!!.username).isEqualTo(TEST_VALID_USERNAME)
     assertThat(result.value!!.token).hasLength(128)
   }
@@ -58,7 +59,6 @@ class SessionImplTest {
   @Test fun login_invalidPassword() {
     val result = sessionImpl.login(UserPasswordCredential(TEST_VALID_USERNAME, "invalid pass"))
 
-    assertThat(result.error).isNotEmpty()
     assertThat(result.httpStatusCode).isEqualTo(HttpStatusCode.Unauthorized)
     assertThat(result.value).isNull()
   }
@@ -68,7 +68,6 @@ class SessionImplTest {
         .thenReturn(DatabaseResult(error = "User not found"))
     val result = sessionImpl.login(UserPasswordCredential("invalid username", TEST_VALID_PASSWORD))
 
-    assertThat(result.error).isNotEmpty()
     assertThat(result.httpStatusCode).isEqualTo(HttpStatusCode.Unauthorized)
     assertThat(result.value).isNull()
   }
@@ -79,7 +78,6 @@ class SessionImplTest {
 
     val result = sessionImpl.login(UserPasswordCredential("error", "password"))
 
-    assertThat(result.error).isNotEmpty()
     assertThat(result.httpStatusCode).isEqualTo(HttpStatusCode.InternalServerError)
     assertThat(result.value).isNull()
   }
@@ -101,14 +99,13 @@ class SessionImplTest {
 
     val result = sessionImpl.getActiveSession(activeSession.value!!.token)
 
-    assertThat(result.error).isNull()
+    assertThat(result.httpStatusCode.isSuccess()).isTrue()
     assertThat(result.value).isEqualTo(activeSession.value)
   }
 
   @Test fun getActiveSession_invalidToken() {
     val result = sessionImpl.getActiveSession("invalid token")
 
-    assertThat(result.error).isNotEmpty()
     assertThat(result.httpStatusCode).isEqualTo(HttpStatusCode.Unauthorized)
     assertThat(result.value).isNull()
   }
@@ -125,7 +122,6 @@ class SessionImplTest {
     val result = sessionImpl.getActiveSession(activeSession.value!!.token)
 
     // Verify it doesn't exist
-    assertThat(result.error).isNotEmpty()
     assertThat(result.httpStatusCode).isEqualTo(HttpStatusCode.Unauthorized)
     assertThat(result.value).isNull()
   }

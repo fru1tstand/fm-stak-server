@@ -13,6 +13,7 @@ import io.ktor.auth.form
 import io.ktor.features.origin
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.isSuccess
 import io.ktor.response.respondText
 import io.ktor.routing.Route
 import io.ktor.routing.delete
@@ -28,14 +29,10 @@ import javax.inject.Inject
 fun Route.session(sessionHandler: SessionHandler) {
   route("session") {
     authenticate(Constants.LOGIN_AUTH_NAME) {
-      post {
-        sessionHandler.login(call)
-      }
+      post { sessionHandler.login(call) }
     }
     authenticate(Constants.SESSION_AUTH_NAME) {
-      delete {
-        sessionHandler.logout(call)
-      }
+      delete { sessionHandler.logout(call) }
     }
   }
 }
@@ -56,11 +53,7 @@ class SessionHandler @Inject constructor(private val session: Session) {
       realm = REALM
       validate { userPasswordCredential -> run<Principal?> {
         val result = session.login(userPasswordCredential)
-        if (result.error != null) {
-          return@run null
-        }
-
-        return@run result.value
+        if (result.httpStatusCode.isSuccess()) result.value else null
       }}
     }
     configuration.form(SESSION_AUTH_NAME) {
@@ -73,7 +66,7 @@ class SessionHandler @Inject constructor(private val session: Session) {
         }
 
         val result = session.getActiveSession(userPasswordCredential.password)
-        if (result.error != null) {
+        if (!result.httpStatusCode.isSuccess()) {
           logger.debug {
             "Session validation failed for host ${request.origin.host}, gave " +
                 userPasswordCredential.password
