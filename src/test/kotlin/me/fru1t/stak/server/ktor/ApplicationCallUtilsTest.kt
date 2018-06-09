@@ -39,6 +39,16 @@ class ApplicationCallUtilsTest {
     result.assert(true, ContentType.Text.Plain, responseResult.value, HttpStatusCode.OK)
   }
 
+  @Test fun respondResult_default_noValue() = withTestApplication {
+    application.routing {
+      get("/") { call.respondResult(Result<Any>(null)) }
+    }
+
+    val result = handleRequest(HttpMethod.Get, "/")
+
+    result.assert(true, ContentType.Text.Plain, "", HttpStatusCode.OK)
+  }
+
   @Test fun respondResult_success() = withTestApplication {
     val responseText = "[ \"test response\" ]"
     val responseType = ContentType.Application.Json
