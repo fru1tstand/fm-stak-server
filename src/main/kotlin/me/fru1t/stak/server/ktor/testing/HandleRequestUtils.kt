@@ -8,6 +8,9 @@ import io.ktor.server.testing.setBody
 import org.jetbrains.annotations.TestOnly
 import java.net.URLEncoder
 import java.util.Base64
+import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.jvm.isAccessible
 
 /** Constants used within this utils file. */
 private object Constants {
@@ -64,7 +67,7 @@ fun TestApplicationRequest.setBody(builder: RequestBodyBuilder.() -> Unit) {
 }
 
 /** Handles building the content of a request body. */
-class RequestBodyBuilder @TestOnly constructor() {
+class RequestBodyBuilder @TestOnly internal constructor() {
   companion object {
     private const val PARAMETER_FORMAT = "%s=%s"
 
@@ -78,6 +81,26 @@ class RequestBodyBuilder @TestOnly constructor() {
   @TestOnly
   fun addParameter(key: String, value: String) {
     parameters[key] = value
+  }
+
+  /**
+   * Serializes the primary constructor parameters within [data] into this request body in the form
+   * of `parameter name`-`value` pairs. This works best with data classes.
+   */
+  @TestOnly
+  fun addData(data: Any) {
+    // For each constructor parameter
+    for (kParameter in data.javaClass.kotlin.primaryConstructor!!.parameters) {
+      // Find the backing field
+      val kProperty1 =
+        data.javaClass.kotlin.declaredMemberProperties.find { it.name == kParameter.name!! }!!
+      // Make sure we have access rights
+      if (!kProperty1.isAccessible) {
+        kProperty1.isAccessible = true
+      }
+      // And add it to this body builder
+      addParameter(kProperty1.name, kProperty1.get(data).toString())
+    }
   }
 
   /** Returns the body content describing the current state of this builder. */

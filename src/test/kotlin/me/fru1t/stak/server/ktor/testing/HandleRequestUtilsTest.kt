@@ -40,13 +40,44 @@ class HandleRequestUtilsTest {
   @Test fun setBody() = withTestApplication {
     val result = handleRequest(HttpMethod.Post, "/") {
       setBody {
-        addParameter("some-key", "a-value with-spaces")
-        addParameter("another-key", "with-a-&bad.value")
+        addParameter("key", "value")
+        addParameter("key2", "value2")
       }
     }
 
     val body = CharStreams.toString(
         InputStreamReader(result.request.bodyChannel.toInputStream(), Charsets.UTF_8))
-    assertThat(body).isEqualTo("some-key=a-value+with-spaces&another-key=with-a-%26bad.value")
+
+    assertThat(body).contains("key=value")
+    assertThat(body).contains("&")
+    assertThat(body).contains("key2=value2")
+  }
+}
+
+class RequestBodyBuilderTest {
+  private data class TestClass(val test: String, private val test2: String)
+
+  @Test fun addParameter() {
+    val result = RequestBodyBuilder().run {
+      addParameter("test", "value1")
+      addParameter("test2", "value with spaces&")
+      build()
+    }
+
+    assertThat(result).contains("test=value1")
+    assertThat(result).contains("&")
+    assertThat(result).contains("test2=value+with+spaces%26")
+  }
+
+  @Test fun addData() {
+    val data = TestClass("value1", "value2")
+    val result = RequestBodyBuilder().run {
+      addData(data)
+      build()
+    }
+
+    assertThat(result).contains("test=value1")
+    assertThat(result).contains("&")
+    assertThat(result).contains("test2=value2")
   }
 }
