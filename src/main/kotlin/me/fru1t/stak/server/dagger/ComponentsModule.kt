@@ -10,6 +10,8 @@ import me.fru1t.stak.server.components.server.Server
 import me.fru1t.stak.server.components.server.impl.ServerImpl
 import me.fru1t.stak.server.components.session.Session
 import me.fru1t.stak.server.components.session.impl.SessionImpl
+import me.fru1t.stak.server.components.user.UserController
+import me.fru1t.stak.server.components.user.impl.UserControllerImpl
 import javax.inject.Singleton
 
 /** Provides default bindings for interface to implementations. */
@@ -19,4 +21,6 @@ abstract class ComponentsModule {
   @Binds @Singleton abstract fun bindDatabase(jsonDatabase: JsonDatabase): Database
   @Binds @Singleton abstract fun bindSession(sessionImpl: SessionImpl): Session
   @Binds @Singleton abstract fun bindSecurity(securityImpl: SecurityImpl): Security
+  @Binds @Singleton abstract fun bindUserController(
+      userControllerImpl: UserControllerImpl): UserController
 }

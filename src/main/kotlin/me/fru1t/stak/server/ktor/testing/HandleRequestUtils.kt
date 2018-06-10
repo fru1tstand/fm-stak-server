@@ -81,7 +81,7 @@ fun TestApplicationRequest.addBasicAuthorizationHeader(username: String, passwor
  */
 @TestOnly
 fun TestApplicationRequest.setBody(builder: RequestBodyBuilder.() -> Unit) {
-  val bodyBuilder = me.fru1t.stak.server.ktor.testing.RequestBodyBuilder()
+  val bodyBuilder = RequestBodyBuilder()
   builder(bodyBuilder)
   setBody(bodyBuilder.build())
 }
