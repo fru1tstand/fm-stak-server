@@ -28,6 +28,6 @@ class UserControllerImpl @Inject constructor(
             HttpStatusCode.InternalServerError else HttpStatusCode.Conflict)
     }
 
-    return Result(newUser)
+    return Result(newUser, HttpStatusCode.Created)
   }
 }

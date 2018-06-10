@@ -36,7 +36,7 @@ class UserControllerImplTest {
 
     val result = userControllerImpl.createUser(TEST_USER_CREATE)
 
-    assertThat(result.httpStatusCode).isEqualTo(HttpStatusCode.OK)
+    assertThat(result.httpStatusCode).isEqualTo(HttpStatusCode.Created)
     assertThat(result.value!!.username).isEqualTo(TEST_USER_CREATE.username)
     assertThat(result.value!!.passwordHash).isEqualTo(TEST_PASSWORD_HASH)
     assertThat(result.value!!.displayName).isEqualTo(TEST_USER_CREATE.displayName)
