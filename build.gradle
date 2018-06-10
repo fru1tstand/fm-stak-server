@@ -35,6 +35,7 @@ dependencies {
     compile group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib-jdk8', version: kotlin_version
     compile group: 'io.ktor', name: 'ktor-server-netty', version: ktor_version
     compile group: 'io.ktor', name: 'ktor-auth', version: ktor_version
+    compile group: 'io.ktor', name: 'ktor-gson', version: ktor_version
     compile group: 'io.ktor', name: 'ktor-server-test-host', version: ktor_version
     compile group: 'com.google.guava', name: 'guava', version: guava_version
     compile group: 'com.google.dagger', name: 'dagger', version: dagger_version

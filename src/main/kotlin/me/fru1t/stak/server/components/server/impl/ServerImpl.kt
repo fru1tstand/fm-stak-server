@@ -3,6 +3,7 @@ package me.fru1t.stak.server.components.server.impl
 import io.ktor.application.install
 import io.ktor.auth.Authentication
 import io.ktor.features.ContentNegotiation
+import io.ktor.gson.gson
 import io.ktor.routing.Routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
@@ -25,7 +26,10 @@ class ServerImpl @Inject constructor(
   override fun run(onStart: (() -> Unit)?) {
     println("Starting server...")
     val engine = embeddedServer(Netty, 8080) {
-      install(ContentNegotiation)
+      install(ContentNegotiation) {
+        // TODO(#3): Integration test to verify gson is set up properly within ContentNegotiation
+        gson {}
+      }
       install(Authentication) {
         sessionHandler.registerAuthentication(this)
       }

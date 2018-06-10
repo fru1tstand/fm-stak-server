@@ -1,12 +1,15 @@
 package me.fru1t.stak.server.ktor
 
+import com.google.gson.JsonSyntaxException
 import io.ktor.application.ApplicationCall
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
+import io.ktor.request.receiveOrNull
 import io.ktor.response.respondText
 import me.fru1t.stak.server.models.Result
 import mu.KLogger
+import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 
 /**
@@ -50,3 +53,26 @@ suspend fun ApplicationCall.respondResultNotImplemented(
   respondText(
       text = "", contentType = ContentType.Text.Plain, status = HttpStatusCode.NotImplemented)
 }
+
+/**
+ * Receives [T] from this [ApplicationCall] or responds with [HttpStatusCode.BadRequest] and returns
+ * `null`. This method will catch json parsing errors.
+ */
+suspend fun <T : Any> ApplicationCall.receiveOrBadRequest(expectedType: KClass<T>) : T? {
+  val result: T? = try {
+    receiveOrNull(expectedType)
+  } catch (e: JsonSyntaxException) {
+    null // Treat JsonSyntaxException the same as an invalid request
+  }
+  if (result == null) {
+    respondEmpty(HttpStatusCode.BadRequest)
+  }
+  return result
+}
+
+/**
+ * Receives [T] from this [ApplicationCall] or responds with [HttpStatusCode.BadRequest] and returns
+ * `null`. This method will catch json parsing errors.
+ */
+suspend inline fun <reified T : Any> ApplicationCall.receiveOrBadRequest() : T? =
+  receiveOrBadRequest(T::class)

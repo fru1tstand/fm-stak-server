@@ -1,25 +1,38 @@
 package me.fru1t.stak.server.ktor
 
 import com.google.common.truth.Truth.assertThat
+import com.google.gson.Gson
 import com.nhaarman.mockito_kotlin.argumentCaptor
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.verify
 import io.ktor.application.call
+import io.ktor.application.install
+import io.ktor.features.ContentNegotiation
+import io.ktor.gson.gson
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.response.respondText
 import io.ktor.routing.get
+import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.ktor.server.testing.TestApplicationCall
+import io.ktor.server.testing.TestApplicationEngine
 import io.ktor.server.testing.contentType
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
+import me.fru1t.stak.server.ktor.testing.handleJsonRequest
 import me.fru1t.stak.server.models.Result
 import mu.KLogger
 import org.junit.jupiter.api.Test
 
 class ApplicationCallUtilsTest {
   companion object {
+    /** Simple data class for testing. */
+    private data class TestClass(val param: String)
+
+    private val TEST_OBJECT = TestClass("example value")
+
     /**
      * Asserts that this [TestApplicationCall] matches the following constraints, failing the test
      * if any parameter doesn't match.
@@ -30,9 +43,16 @@ class ApplicationCallUtilsTest {
         content: String?,
         status: HttpStatusCode) {
       assertThat(this.requestHandled).isEqualTo(requestHandled)
-      assertThat(this.response.contentType().contentType).contains(contentType.contentType)
+      assertThat(this.response.contentType().toString()).contains(contentType.toString())
       assertThat(this.response.content).isEqualTo(content)
       assertThat(this.response.status()).isEqualTo(status)
+    }
+
+    /** Installs the [ContentNegotiation] module to the test application. */
+    private fun withContentNegotiationTestApplication(
+        test: TestApplicationEngine.() -> Unit) = withTestApplication {
+      application.install(ContentNegotiation) { gson { setPrettyPrinting() } }
+      test()
     }
 
     private fun testFunction() = "just a test"
@@ -46,7 +66,11 @@ class ApplicationCallUtilsTest {
 
     val result = handleRequest(HttpMethod.Get, "/")
 
-    result.assert(true, ContentType.Text.Plain, responseResult.value, HttpStatusCode.OK)
+    result.assert(
+        requestHandled = true,
+        contentType = ContentType.Text.Plain,
+        content = responseResult.value,
+        status = HttpStatusCode.OK)
   }
 
   @Test fun respondResult_default_noValue() = withTestApplication {
@@ -56,7 +80,11 @@ class ApplicationCallUtilsTest {
 
     val result = handleRequest(HttpMethod.Get, "/")
 
-    result.assert(true, ContentType.Text.Plain, "", HttpStatusCode.OK)
+    result.assert(
+        requestHandled = true,
+        contentType = ContentType.Text.Plain,
+        content = "",
+        status = HttpStatusCode.OK)
   }
 
   @Test fun respondResult_success() = withTestApplication {
@@ -75,7 +103,11 @@ class ApplicationCallUtilsTest {
 
     val result = handleRequest(HttpMethod.Get, "/")
 
-    result.assert(true, responseType, responseText, responseResult.httpStatusCode)
+    result.assert(
+        requestHandled = true,
+        contentType = responseType,
+        content = responseText,
+        status = responseResult.httpStatusCode)
   }
 
   @Test fun respondResult_notSuccess() = withTestApplication {
@@ -86,7 +118,11 @@ class ApplicationCallUtilsTest {
 
     val result = handleRequest(HttpMethod.Get, "/")
 
-    result.assert(true, ContentType.Text.Plain, "", HttpStatusCode.Unauthorized)
+    result.assert(
+        requestHandled = true,
+        contentType = ContentType.Text.Plain,
+        content = "",
+        status = HttpStatusCode.Unauthorized)
   }
 
   @Test fun respondEmpty_default() = withTestApplication {
@@ -96,7 +132,11 @@ class ApplicationCallUtilsTest {
 
     val result = handleRequest(HttpMethod.Get, "/")
 
-    result.assert(true, ContentType.Text.Plain, "", HttpStatusCode.OK)
+    result.assert(
+        requestHandled = true,
+        contentType = ContentType.Text.Plain,
+        content = "",
+        status = HttpStatusCode.OK)
   }
 
   @Test fun respondEmpty() = withTestApplication {
@@ -107,7 +147,11 @@ class ApplicationCallUtilsTest {
 
     val result = handleRequest(HttpMethod.Get, "/")
 
-    result.assert(true, ContentType.Text.Plain, "", responseStatus)
+    result.assert(
+        requestHandled = true,
+        contentType = ContentType.Text.Plain,
+        content = "",
+        status = responseStatus)
   }
 
   @Test fun respondResultNotImplemented() = withTestApplication {
@@ -132,5 +176,39 @@ class ApplicationCallUtilsTest {
     assertThat(error).contains(Companion::testFunction.toString())
     assertThat(error).contains("HttpStatusCode not handled")
     assertThat(error).contains(unexpectedResponseCode.toString())
+  }
+
+  @Test fun receiveOrBadRequest() = withContentNegotiationTestApplication {
+    application.routing {
+      post("/") {
+        val result = call.receiveOrBadRequest<TestClass>() ?: return@post
+        call.respondText(result.param, ContentType.Text.Plain, HttpStatusCode.OK)
+      }
+    }
+
+    val request = handleJsonRequest(TEST_OBJECT, Gson(), HttpMethod.Post, "/") {}
+
+    request.assert(
+        requestHandled = true,
+        contentType = ContentType.Text.Plain,
+        content = TEST_OBJECT.param,
+        status = HttpStatusCode.OK)
+  }
+
+  @Test fun receiveOrBadRequest_badRequest() = withContentNegotiationTestApplication {
+    application.routing {
+      get("/") {
+        call.receiveOrBadRequest(TestClass::class) ?: return@get
+        call.respondEmpty()
+      }
+    }
+
+    val request = handleJsonRequest("error{{", Gson(), HttpMethod.Get, "/") {}
+
+    request.assert(
+        requestHandled = true,
+        contentType = ContentType.Text.Plain,
+        content = "",
+        status = HttpStatusCode.BadRequest)
   }
 }
