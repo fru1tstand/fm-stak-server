@@ -6,6 +6,9 @@ import io.ktor.http.isSuccess
 /**
  * A [Result] contains an optional return value and an [HttpStatusCode] representing its result
  * state. [Result]s are predominately used to provide context to an internal controller call.
+ *
+ * Note: A method that returns a [Result] should document its [HttpStatusCode] possibilities and
+ * describe what each possibility means.
  */
 data class Result<T>(
     /** A successfully yielded value from an operation. */
