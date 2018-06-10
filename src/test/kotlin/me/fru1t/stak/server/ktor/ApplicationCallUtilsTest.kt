@@ -1,6 +1,9 @@
 package me.fru1t.stak.server.ktor
 
 import com.google.common.truth.Truth.assertThat
+import com.nhaarman.mockito_kotlin.argumentCaptor
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.verify
 import io.ktor.application.call
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
@@ -12,11 +15,16 @@ import io.ktor.server.testing.contentType
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
 import me.fru1t.stak.server.models.Result
+import mu.KLogger
 import org.junit.jupiter.api.Test
 
 class ApplicationCallUtilsTest {
   companion object {
-    fun TestApplicationCall.assert(
+    /**
+     * Asserts that this [TestApplicationCall] matches the following constraints, failing the test
+     * if any parameter doesn't match.
+     */
+    private fun TestApplicationCall.assert(
         requestHandled: Boolean,
         contentType: ContentType,
         content: String?,
@@ -26,6 +34,8 @@ class ApplicationCallUtilsTest {
       assertThat(this.response.content).isEqualTo(content)
       assertThat(this.response.status()).isEqualTo(status)
     }
+
+    private fun testFunction() = "just a test"
   }
 
   @Test fun respondResult_default() = withTestApplication {
@@ -98,5 +108,29 @@ class ApplicationCallUtilsTest {
     val result = handleRequest(HttpMethod.Get, "/")
 
     result.assert(true, ContentType.Text.Plain, "", responseStatus)
+  }
+
+  @Test fun respondResultNotImplemented() = withTestApplication {
+    val mockLogger = mock<KLogger>()
+    val errorCaptor = argumentCaptor<() -> String>()
+    val unexpectedResponseCode = HttpStatusCode.ExceptionFailed
+    application.routing {
+      get("/") {
+        call.respondResultNotImplemented(
+            Result<Nothing>(httpStatusCode = unexpectedResponseCode),
+            Companion::testFunction,
+            mockLogger)
+      }
+    }
+
+    val result = handleRequest(HttpMethod.Get, "/")
+
+    result.assert(true, ContentType.Text.Plain, "", HttpStatusCode.NotImplemented)
+    verify(mockLogger).error(errorCaptor.capture())
+    val error = errorCaptor.firstValue()
+    assertThat(error).contains("Unexpected result")
+    assertThat(error).contains(Companion::testFunction.toString())
+    assertThat(error).contains("HttpStatusCode not handled")
+    assertThat(error).contains(unexpectedResponseCode.toString())
   }
 }

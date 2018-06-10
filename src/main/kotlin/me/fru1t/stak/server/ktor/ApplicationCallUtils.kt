@@ -6,6 +6,8 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import io.ktor.response.respondText
 import me.fru1t.stak.server.models.Result
+import mu.KLogger
+import kotlin.reflect.KFunction
 
 /**
  * Responds to a request using a [Result]. Http status will always be set to the
@@ -33,4 +35,18 @@ suspend fun <T> ApplicationCall.respondResult(
  */
 suspend fun ApplicationCall.respondEmpty(httpStatusCode: HttpStatusCode = HttpStatusCode.OK) {
   respondText(text = "", contentType = ContentType.Text.Plain, status = httpStatusCode)
+}
+
+/**
+ * Responds to a request with [HttpStatusCode.NotImplemented] and error logs the
+ * [unexpectedResult]'s [HttpStatusCode] providing context on the [producingFunction].
+ */
+suspend fun ApplicationCall.respondResultNotImplemented(
+    unexpectedResult: Result<*>, producingFunction: KFunction<*>, logger: KLogger) {
+  logger.error {
+    "Unexpected result from $producingFunction. HttpStatusCode not handled: " +
+        unexpectedResult.httpStatusCode
+  }
+  respondText(
+      text = "", contentType = ContentType.Text.Plain, status = HttpStatusCode.NotImplemented)
 }
