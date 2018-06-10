@@ -12,11 +12,11 @@ import io.ktor.server.testing.TestApplicationEngine
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
 import me.fru1t.stak.server.components.session.Session
+import me.fru1t.stak.server.ktor.testing.addBasicAuthorizationHeader
+import me.fru1t.stak.server.ktor.testing.handleFormRequest
+import me.fru1t.stak.server.ktor.testing.setBody
 import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.UserPrincipal
-import me.fru1t.stak.server.testing.ktor.addBasicAuthorizationHeader
-import me.fru1t.stak.server.testing.ktor.handleFormRequest
-import me.fru1t.stak.server.testing.ktor.setBody
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock

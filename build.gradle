@@ -36,6 +36,7 @@ dependencies {
     compile group: 'io.ktor', name: 'ktor-server-netty', version: ktor_version
     compile group: 'io.ktor', name: 'ktor-auth', version: ktor_version
     compile group: 'io.ktor', name: 'ktor-locations', version: ktor_version
+    compile group: 'io.ktor', name: 'ktor-server-test-host', version: ktor_version
     compile group: 'com.google.guava', name: 'guava', version: guava_version
     compile group: 'com.google.dagger', name: 'dagger', version: dagger_version
     compile group: 'com.google.code.gson', name: 'gson', version: '2.8.5'
@@ -47,7 +48,6 @@ dependencies {
     testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: junit_jupiter_version
     testCompile group: 'com.google.truth', name: 'truth', version: '0.33'
     testCompile group: 'com.nhaarman', name: 'mockito-kotlin', version: '1.5.0'
-    testCompile group: 'io.ktor', name: 'ktor-server-test-host', version: ktor_version
     testCompile group: 'com.google.guava', name: 'guava-testlib', version: guava_version
 
     kaptTest "com.google.dagger:dagger-compiler:$dagger_version"

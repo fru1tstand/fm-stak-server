@@ -1,10 +1,11 @@
-package me.fru1t.stak.server.testing.ktor
+package me.fru1t.stak.server.ktor.testing
 
 import io.ktor.http.HttpMethod
 import io.ktor.server.testing.TestApplicationEngine
 import io.ktor.server.testing.TestApplicationRequest
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
+import org.jetbrains.annotations.TestOnly
 import java.net.URLEncoder
 import java.util.Base64
 
@@ -25,15 +26,19 @@ private object Constants {
  * `content-type: application/x-www-form-urlencoded` header. that allows encoding of parameters in
  * the request body. This is required to use [TestApplicationRequest.setBody].
  */
+@TestOnly
 fun TestApplicationEngine.handleFormRequest(
     method: HttpMethod,
     uri: String,
     setup: TestApplicationRequest.() -> Unit) = handleRequest(method, uri) {
-  addHeader(Constants.HEADER_CONTENT_TYPE, Constants.CONTENT_TYPE_FORM_URLENCODED)
+  addHeader(
+      Constants.HEADER_CONTENT_TYPE,
+      Constants.CONTENT_TYPE_FORM_URLENCODED)
   setup(this)
 }
 
 /** Adds the basic authorization header to this request given a `username` and `password`. */
+@TestOnly
 fun TestApplicationRequest.addBasicAuthorizationHeader(username: String, password: String) {
   val base64EncodedCredentials =
     Base64.getEncoder().encode(
@@ -51,14 +56,15 @@ fun TestApplicationRequest.addBasicAuthorizationHeader(username: String, passwor
  * `content-type: application/x-www-form-urlencoded` header, which can be automatically set by using
  * [TestApplicationEngine.handleFormRequest].
  */
+@TestOnly
 fun TestApplicationRequest.setBody(builder: RequestBodyBuilder.() -> Unit) {
-  val bodyBuilder = RequestBodyBuilder()
+  val bodyBuilder = me.fru1t.stak.server.ktor.testing.RequestBodyBuilder()
   builder(bodyBuilder)
   setBody(bodyBuilder.build())
 }
 
 /** Handles building the content of a request body. */
-class RequestBodyBuilder {
+class RequestBodyBuilder @TestOnly constructor() {
   companion object {
     private const val PARAMETER_FORMAT = "%s=%s"
 
@@ -69,11 +75,13 @@ class RequestBodyBuilder {
   private val parameters: MutableMap<String, String> = HashMap()
 
   /** Adds a [key]-[value] parameter to the request. */
+  @TestOnly
   fun addParameter(key: String, value: String) {
     parameters[key] = value
   }
 
   /** Returns the body content describing the current state of this builder. */
+  @TestOnly
   fun build(): String =
     parameters.map { entry -> PARAMETER_FORMAT.format(entry.key.encode(), entry.value.encode()) }
         .joinToString(separator = "&")
