@@ -41,7 +41,7 @@ class ApplicationCallUtilsTest {
 
   @Test fun respondResult_default_noValue() = withTestApplication {
     application.routing {
-      get("/") { call.respondResult(Result<Any>(null)) }
+      get("/") { call.respondResult(Result(null)) }
     }
 
     val result = handleRequest(HttpMethod.Get, "/")
