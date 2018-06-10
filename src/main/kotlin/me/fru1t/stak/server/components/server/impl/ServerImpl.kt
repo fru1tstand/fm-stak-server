@@ -2,7 +2,7 @@ package me.fru1t.stak.server.components.server.impl
 
 import io.ktor.application.install
 import io.ktor.auth.Authentication
-import io.ktor.locations.Locations
+import io.ktor.features.ContentNegotiation
 import io.ktor.routing.Routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
@@ -25,7 +25,7 @@ class ServerImpl @Inject constructor(
   override fun run(onStart: (() -> Unit)?) {
     println("Starting server...")
     val engine = embeddedServer(Netty, 8080) {
-      install(Locations)
+      install(ContentNegotiation)
       install(Authentication) {
         sessionHandler.registerAuthentication(this)
       }
