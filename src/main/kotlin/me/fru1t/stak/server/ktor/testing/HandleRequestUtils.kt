@@ -1,11 +1,16 @@
 package me.fru1t.stak.server.ktor.testing
 
+import com.google.common.io.CharStreams
+import com.google.gson.Gson
 import io.ktor.http.HttpMethod
+import io.ktor.server.testing.TestApplicationCall
 import io.ktor.server.testing.TestApplicationEngine
 import io.ktor.server.testing.TestApplicationRequest
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
+import kotlinx.coroutines.experimental.io.jvm.javaio.toInputStream
 import org.jetbrains.annotations.TestOnly
+import java.io.InputStreamReader
 import java.net.URLEncoder
 import java.util.Base64
 import kotlin.reflect.full.declaredMemberProperties
@@ -22,6 +27,7 @@ private object Constants {
   /* Content-type header constants. */
   const val HEADER_CONTENT_TYPE = "content-type"
   const val CONTENT_TYPE_FORM_URLENCODED = "application/x-www-form-urlencoded"
+  const val CONTENT_TYPE_JSON = "application/json"
 }
 
 /**
@@ -34,13 +40,27 @@ fun TestApplicationEngine.handleFormRequest(
     method: HttpMethod,
     uri: String,
     setup: TestApplicationRequest.() -> Unit) = handleRequest(method, uri) {
-  addHeader(
-      Constants.HEADER_CONTENT_TYPE,
-      Constants.CONTENT_TYPE_FORM_URLENCODED)
-  setup(this)
+  addHeader(Constants.HEADER_CONTENT_TYPE, Constants.CONTENT_TYPE_FORM_URLENCODED)
+  setup()
 }
 
-/** Adds the basic authorization header to this request given a `username` and `password`. */
+/**
+ * Performs a [handleRequest] call setting the `content-type` header to `application/json` and
+ * encoding the given [data] as JSON in the request body.
+ */
+@TestOnly
+fun TestApplicationEngine.handleJsonRequest(
+    data: Any,
+    gson: Gson,
+    method: HttpMethod,
+    uri: String,
+    setup: TestApplicationRequest.() -> Unit) = handleRequest(method, uri) {
+  addHeader(Constants.HEADER_CONTENT_TYPE, Constants.CONTENT_TYPE_JSON)
+  setBody(gson.toJson(data))
+  setup()
+}
+
+/** Adds the basic authorization header to this request given a [username] and [password]. */
 @TestOnly
 fun TestApplicationRequest.addBasicAuthorizationHeader(username: String, password: String) {
   val base64EncodedCredentials =
@@ -65,6 +85,11 @@ fun TestApplicationRequest.setBody(builder: RequestBodyBuilder.() -> Unit) {
   builder(bodyBuilder)
   setBody(bodyBuilder.build())
 }
+
+/** Retrieves the body of this [TestApplicationCall]. */
+@TestOnly
+fun TestApplicationCall.getBody() : String =
+  CharStreams.toString(InputStreamReader(request.bodyChannel.toInputStream(), Charsets.UTF_8))
 
 /** Handles building the content of a request body. */
 class RequestBodyBuilder @TestOnly internal constructor() {

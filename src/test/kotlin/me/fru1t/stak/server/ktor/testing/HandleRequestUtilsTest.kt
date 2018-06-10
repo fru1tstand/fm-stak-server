@@ -1,25 +1,42 @@
 package me.fru1t.stak.server.ktor.testing
 
-import com.google.common.io.CharStreams
 import com.google.common.truth.Truth.assertThat
+import com.google.gson.Gson
 import io.ktor.http.HttpMethod
+import io.ktor.request.contentType
 import io.ktor.server.testing.handleRequest
+import io.ktor.server.testing.setBody
 import io.ktor.server.testing.withTestApplication
-import kotlinx.coroutines.experimental.io.jvm.javaio.toInputStream
 import org.junit.jupiter.api.Test
-import java.io.InputStreamReader
 import java.util.Base64
 
 class HandleRequestUtilsTest {
+  /** A basic data class for testing. */
+  private data class TestClass(val param1: String, val param2: Int)
+
   @Test fun handleFormRequest() = withTestApplication {
     val httpMethod = HttpMethod.Delete
     val uri = "/example/uri"
 
     val result = handleFormRequest(httpMethod, uri) {}
 
-    assertThat(result.request.headers["content-type"]!!)
+    assertThat(result.request.contentType().toString())
         .contains("application/x-www-form-urlencoded")
     assertThat(result.request.uri).isEqualTo(uri)
+    assertThat(result.request.method).isEqualTo(httpMethod)
+  }
+
+  @Test fun handleJsonRequest() = withTestApplication {
+    val httpMethod = HttpMethod.Patch
+    val uri = "/example"
+    val gson = Gson()
+    val data = TestClass("example param 1", 300)
+
+    val result = handleJsonRequest(data, gson, httpMethod, uri) {}
+
+    assertThat(result.getBody()).isEqualTo(gson.toJson(data))
+    assertThat(result.request.method).isEqualTo(httpMethod)
+    assertThat(result.request.contentType().toString()).contains("application/json")
   }
 
   @Test fun addBasicAuthorizationHeader() = withTestApplication {
@@ -38,23 +55,31 @@ class HandleRequestUtilsTest {
   }
 
   @Test fun setBody() = withTestApplication {
-    val result = handleRequest(HttpMethod.Post, "/") {
+    val request = handleRequest(HttpMethod.Post, "/") {
       setBody {
         addParameter("key", "value")
         addParameter("key2", "value2")
       }
     }
 
-    val body = CharStreams.toString(
-        InputStreamReader(result.request.bodyChannel.toInputStream(), Charsets.UTF_8))
+    val result = request.getBody()
+    assertThat(result).contains("key=value")
+    assertThat(result).contains("&")
+    assertThat(result).contains("key2=value2")
+  }
 
-    assertThat(body).contains("key=value")
-    assertThat(body).contains("&")
-    assertThat(body).contains("key2=value2")
+  @Test fun getBody() = withTestApplication {
+    val body = "example content in {{{ the body with lots of 43333 !#(^%$&^%@) things."
+
+    val request = handleRequest { setBody(body) }
+
+    val result = request.getBody()
+    assertThat(result).isEqualTo(body)
   }
 }
 
 class RequestBodyBuilderTest {
+  /** A basic data class for testing. */
   private data class TestClass(val test: String, private val test2: String)
 
   @Test fun addParameter() {
