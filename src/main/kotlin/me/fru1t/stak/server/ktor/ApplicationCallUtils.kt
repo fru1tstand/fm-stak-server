@@ -7,19 +7,19 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import io.ktor.request.receiveOrNull
 import io.ktor.response.respondText
-import me.fru1t.stak.server.models.Result
+import me.fru1t.stak.server.models.LegacyResult
 import mu.KLogger
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 
 /**
- * Responds to a request using a [Result]. Http status will always be set to the
- * [Result.httpStatusCode]. If the [result] was successful, the response body will be set to the
+ * Responds to a request using a [LegacyResult]. Http status will always be set to the
+ * [LegacyResult.httpStatusCode]. If the [result] was successful, the response body will be set to the
  * output of [successText] with content type [successContentType]. If the [result] was unsuccessful,
  * the response body will be an empty string with the content type [ContentType.Text.Plain].
  */
 suspend fun <T> ApplicationCall.respondResult(
-    result: Result<T>,
+    result: LegacyResult<T>,
     successText: (T?) -> String = { it?.toString() ?: "" },
     successContentType: ContentType = ContentType.Text.Plain) {
   if (result.httpStatusCode.isSuccess()) {
@@ -45,7 +45,7 @@ suspend fun ApplicationCall.respondEmpty(httpStatusCode: HttpStatusCode = HttpSt
  * [unexpectedResult]'s [HttpStatusCode] providing context on the [producingFunction].
  */
 suspend fun ApplicationCall.respondResultNotImplemented(
-    unexpectedResult: Result<*>, producingFunction: KFunction<*>, logger: KLogger) {
+    unexpectedResult: LegacyResult<*>, producingFunction: KFunction<*>, logger: KLogger) {
   logger.error {
     "Unexpected result from $producingFunction. HttpStatusCode not handled: " +
         unexpectedResult.httpStatusCode

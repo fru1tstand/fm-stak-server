@@ -8,7 +8,7 @@ import me.fru1t.stak.server.Constants
 import me.fru1t.stak.server.components.database.Database
 import me.fru1t.stak.server.components.security.Security
 import me.fru1t.stak.server.components.session.SessionController
-import me.fru1t.stak.server.models.Result
+import me.fru1t.stak.server.models.LegacyResult
 import me.fru1t.stak.server.models.UserPrincipal
 import mu.KLogging
 import java.util.concurrent.TimeUnit
@@ -30,21 +30,21 @@ class SessionControllerImpl @Inject constructor(
       .expireAfterAccess(sessionTimeoutHours, TimeUnit.HOURS)
       .build<String, UserPrincipal>()
 
-  override fun login(userPasswordCredential: UserPasswordCredential): Result<UserPrincipal> {
+  override fun login(userPasswordCredential: UserPasswordCredential): LegacyResult<UserPrincipal> {
     val userResult = database.getUserByUsername(userPasswordCredential.name)
     if (userResult.error != null && userResult.isDatabaseError) {
       logger.error { "Database error: ${userResult.error}" }
-      return Result(httpStatusCode = HttpStatusCode.InternalServerError)
+      return LegacyResult(httpStatusCode = HttpStatusCode.InternalServerError)
     }
 
     if (!security.equals(userPasswordCredential.password, userResult.result?.passwordHash)) {
-      return Result(httpStatusCode = HttpStatusCode.Unauthorized)
+      return LegacyResult(httpStatusCode = HttpStatusCode.Unauthorized)
     }
 
     val userPrincipal = UserPrincipal(
         username = userResult.result!!.username, token = security.generateRandomToken(TOKEN_LENGTH))
     activeSessions.put(userPrincipal.token, userPrincipal)
-    return Result(value = userPrincipal)
+    return LegacyResult(value = userPrincipal)
   }
 
   override fun logout(token: String): Boolean {
@@ -55,8 +55,8 @@ class SessionControllerImpl @Inject constructor(
     return false
   }
 
-  override fun getActiveSession(token: String): Result<UserPrincipal> =
+  override fun getActiveSession(token: String): LegacyResult<UserPrincipal> =
     activeSessions.getIfPresent(token)
-        ?.let { Result(value = it) }
-        ?: Result(httpStatusCode = HttpStatusCode.Unauthorized)
+        ?.let { LegacyResult(value = it) }
+        ?: LegacyResult(httpStatusCode = HttpStatusCode.Unauthorized)
 }

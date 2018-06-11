@@ -15,7 +15,7 @@ import me.fru1t.stak.server.components.session.SessionController
 import me.fru1t.stak.server.ktor.testing.addBasicAuthorizationHeader
 import me.fru1t.stak.server.ktor.testing.handleFormRequest
 import me.fru1t.stak.server.ktor.testing.setBody
-import me.fru1t.stak.server.models.Result
+import me.fru1t.stak.server.models.LegacyResult
 import me.fru1t.stak.server.models.UserPrincipal
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,7 +24,7 @@ import org.mockito.MockitoAnnotations
 
 class SessionHandlerTest {
   companion object {
-    private val TEST_VALID_USER_PRINCIPAL_RESULT = Result(UserPrincipal("username", "sometoken"))
+    private val TEST_VALID_USER_PRINCIPAL_RESULT = LegacyResult(UserPrincipal("username", "sometoken"))
   }
 
   @Mock private lateinit var mockSessionController: SessionController
@@ -53,7 +53,7 @@ class SessionHandlerTest {
 
   @Test fun registerAuthentication_form_invalidActiveSession() = withSessionHandler {
     whenever(mockSessionController.getActiveSession(any()))
-        .thenReturn(Result(httpStatusCode = HttpStatusCode.Unauthorized))
+        .thenReturn(LegacyResult(httpStatusCode = HttpStatusCode.Unauthorized))
 
     val result = handleFormRequest(HttpMethod.Delete, "/session") {
       setBody {
@@ -79,7 +79,7 @@ class SessionHandlerTest {
 
   @Test fun login_invalidCredentials() = withSessionHandler {
     whenever(mockSessionController.login(any()))
-        .thenReturn(Result(httpStatusCode = HttpStatusCode.Unauthorized))
+        .thenReturn(LegacyResult(httpStatusCode = HttpStatusCode.Unauthorized))
 
     val result = handleFormRequest(HttpMethod.Post, "/session") {
       addBasicAuthorizationHeader("test username", "test password")

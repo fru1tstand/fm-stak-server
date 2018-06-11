@@ -22,7 +22,7 @@ import io.ktor.server.testing.contentType
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
 import me.fru1t.stak.server.ktor.testing.handleJsonRequest
-import me.fru1t.stak.server.models.Result
+import me.fru1t.stak.server.models.LegacyResult
 import mu.KLogger
 import org.junit.jupiter.api.Test
 
@@ -59,7 +59,7 @@ class ApplicationCallUtilsTest {
   }
 
   @Test fun respondResult_default() = withTestApplication {
-    val responseResult = Result("This is a successful result")
+    val responseResult = LegacyResult("This is a successful result")
     application.routing {
       get("/") { call.respondResult(responseResult) }
     }
@@ -75,7 +75,7 @@ class ApplicationCallUtilsTest {
 
   @Test fun respondResult_default_noValue() = withTestApplication {
     application.routing {
-      get("/") { call.respondResult(Result(null)) }
+      get("/") { call.respondResult(LegacyResult(null)) }
     }
 
     val result = handleRequest(HttpMethod.Get, "/")
@@ -91,7 +91,7 @@ class ApplicationCallUtilsTest {
     val responseText = "[ \"test response\" ]"
     val responseType = ContentType.Application.Json
     val responseResult =
-      Result(value = "This is a successful result", httpStatusCode = HttpStatusCode.Accepted)
+      LegacyResult(value = "This is a successful result", httpStatusCode = HttpStatusCode.Accepted)
     application.routing {
       get("/") {
         call.respondResult(
@@ -111,7 +111,7 @@ class ApplicationCallUtilsTest {
   }
 
   @Test fun respondResult_notSuccess() = withTestApplication {
-    val responseResult = Result<Any>(httpStatusCode = HttpStatusCode.Unauthorized)
+    val responseResult = LegacyResult<Any>(httpStatusCode = HttpStatusCode.Unauthorized)
     application.routing {
       get("/") { call.respondResult(responseResult) }
     }
@@ -161,7 +161,7 @@ class ApplicationCallUtilsTest {
     application.routing {
       get("/") {
         call.respondResultNotImplemented(
-            Result<Nothing>(httpStatusCode = unexpectedResponseCode),
+            LegacyResult<Nothing>(httpStatusCode = unexpectedResponseCode),
             Companion::testFunction,
             mockLogger)
       }

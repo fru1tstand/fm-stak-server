@@ -1,21 +1,50 @@
 package me.fru1t.stak.server.models
 
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.isSuccess
 
 /**
- * A [Result] contains an optional return value and an [HttpStatusCode] representing its result
- * state. [Result]s are predominately used to provide context to an internal controller call.
+ * A [LegacyResult] contains an optional return value and an [HttpStatusCode] representing its result
+ * state. [LegacyResult]s are predominately used to provide context to an internal controller call.
  *
- * Note: A method that returns a [Result] should document its [HttpStatusCode] possibilities and
+ * Note: A method that returns a [LegacyResult] should document its [HttpStatusCode] possibilities and
  * describe what each possibility means.
  */
-data class Result<T>(
+@Deprecated(
+    "Introduces too much if-this-then-that behavior due to the httpStatusCode",
+    ReplaceWith("Result", "me.fru1t.stak.server.models"))
+data class LegacyResult<T>(
     /** A successfully yielded value from an operation. */
     val value: T? = null,
 
     /**
      * The HTTP status code that should be returned. Use [HttpStatusCode.isSuccess] to determine
-     * whether or not this [Result] was successful.
+     * whether or not this [LegacyResult] was successful.
      */
     val httpStatusCode: HttpStatusCode = HttpStatusCode.OK)
+
+/**
+ * A [StatusEnum] defines (at least) a single [StatusEnum.getStatus] method that retrieves an
+ * [HttpStatusCode] that corresponds to the enum value.
+ * @see Result
+ */
+interface StatusEnum {
+  /** Fetches the [HttpStatusCode] associated to this status enum. */
+  fun getStatus(): HttpStatusCode
+}
+
+/**
+ * Provides context to a function's return by providing two fields: the yielded [value] and the
+ * [status]. Results are most notably used in `when` expression statements (ie. `return when(...)`
+ * or `val foo = when(...)`) against the [status] which enables static checking to validate that
+ * all possibilities of the [status] are accounted for.
+ * @param V the value type which can be nullable or even [Nothing].
+ * @param S the status type which must be an [Enum] that implements [StatusEnum].
+ */
+data class Result<V, S>(
+    /** The yielded value of the method. */
+    val value: V,
+
+    /** Context for why the method returned. */
+    val status: S)
+    where S : Enum<S>,
+          S : StatusEnum

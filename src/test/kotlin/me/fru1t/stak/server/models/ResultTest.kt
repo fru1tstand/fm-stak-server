@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 
 class ResultTest {
   @Test fun default() {
-    val result = Result<Any>()
+    val result = LegacyResult<Any>()
 
     assertThat(result.value).isNull()
     assertThat(result.httpStatusCode).isEqualTo(HttpStatusCode.OK)
