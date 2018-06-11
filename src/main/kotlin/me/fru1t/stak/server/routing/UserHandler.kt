@@ -4,14 +4,10 @@ import io.ktor.application.ApplicationCall
 import io.ktor.auth.UserPasswordCredential
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.isSuccess
-import io.ktor.request.receive
-import io.ktor.request.receiveOrNull
-import io.ktor.request.receiveParameters
 import io.ktor.routing.Route
 import io.ktor.routing.post
 import io.ktor.routing.route
-import me.fru1t.stak.server.components.session.Session
+import me.fru1t.stak.server.components.session.SessionController
 import me.fru1t.stak.server.components.user.UserController
 import me.fru1t.stak.server.ktor.receiveOrBadRequest
 import me.fru1t.stak.server.ktor.respondEmpty
@@ -32,7 +28,7 @@ fun Route.user(userHandler: UserHandler) {
 /** Handles REST operations for the "/user" space. */
 class UserHandler @Inject constructor(
     private val userController: UserController,
-    private val session: Session) {
+    private val sessionController: SessionController) {
   companion object : KLogging()
 
   /**
@@ -79,7 +75,7 @@ class UserHandler @Inject constructor(
     }
 
     val sessionResult =
-      session.login(UserPasswordCredential(userCreate.username, userCreate.password))
+      sessionController.login(UserPasswordCredential(userCreate.username, userCreate.password))
     return when (sessionResult.httpStatusCode) {
       // Created - Success!
       HttpStatusCode.OK ->
@@ -90,7 +86,7 @@ class UserHandler @Inject constructor(
       // Reset content
       HttpStatusCode.Unauthorized -> call.respondEmpty(HttpStatusCode.ResetContent)
       // NotImplemented - Unexpected
-      else -> call.respondResultNotImplemented(sessionResult, Session::login, logger)
+      else -> call.respondResultNotImplemented(sessionResult, SessionController::login, logger)
     }
   }
 }

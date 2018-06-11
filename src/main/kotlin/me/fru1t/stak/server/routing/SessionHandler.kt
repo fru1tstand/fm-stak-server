@@ -20,7 +20,7 @@ import io.ktor.routing.delete
 import io.ktor.routing.post
 import io.ktor.routing.route
 import me.fru1t.stak.server.Constants
-import me.fru1t.stak.server.components.session.Session
+import me.fru1t.stak.server.components.session.SessionController
 import me.fru1t.stak.server.models.UserPrincipal
 import mu.KLogging
 import javax.inject.Inject
@@ -38,7 +38,7 @@ fun Route.session(sessionHandler: SessionHandler) {
 }
 
 /** Handles session routing including logging in, logging out, and persistent session data. */
-class SessionHandler @Inject constructor(private val session: Session) {
+class SessionHandler @Inject constructor(private val sessionController: SessionController) {
   companion object : KLogging() {
     private const val REALM = "stak-user"
 
@@ -51,31 +51,35 @@ class SessionHandler @Inject constructor(private val session: Session) {
   fun registerAuthentication(configuration: Authentication.Configuration) {
     configuration.basic(Constants.LOGIN_AUTH_NAME) {
       realm = REALM
-      validate { userPasswordCredential -> run<Principal?> {
-        val result = session.login(userPasswordCredential)
-        if (result.httpStatusCode.isSuccess()) result.value else null
-      }}
+      validate { userPasswordCredential ->
+        run<Principal?> {
+          val result = sessionController.login(userPasswordCredential)
+          if (result.httpStatusCode.isSuccess()) result.value else null
+        }
+      }
     }
     configuration.form(SESSION_AUTH_NAME) {
       userParamName = SESSION_USER_PARAM_NAME
       passwordParamName = SESSION_PASS_PARAM_NAME
       challenge = FormAuthChallenge.Unauthorized
-      validate { userPasswordCredential -> run<Principal?> {
-        if (userPasswordCredential.name != SESSION_USER_PARAM_VALUE) {
-          return@run null
-        }
-
-        val result = session.getActiveSession(userPasswordCredential.password)
-        if (!result.httpStatusCode.isSuccess()) {
-          logger.debug {
-            "Session validation failed for host ${request.origin.host}, gave " +
-                userPasswordCredential.password
+      validate { userPasswordCredential ->
+        run<Principal?> {
+          if (userPasswordCredential.name != SESSION_USER_PARAM_VALUE) {
+            return@run null
           }
-          return@run null
-        }
 
-        return@run result.value
-      }}
+          val result = sessionController.getActiveSession(userPasswordCredential.password)
+          if (!result.httpStatusCode.isSuccess()) {
+            logger.debug {
+              "Session validation failed for host ${request.origin.host}, gave " +
+                  userPasswordCredential.password
+            }
+            return@run null
+          }
+
+          return@run result.value
+        }
+      }
     }
   }
 
@@ -102,10 +106,8 @@ class SessionHandler @Inject constructor(private val session: Session) {
    * Response: nothing.
    */
   suspend fun logout(call: ApplicationCall) {
-    session.logout(call.authentication.principal<UserPrincipal>()!!.token)
+    sessionController.logout(call.authentication.principal<UserPrincipal>()!!.token)
     call.respondText(
-        text = "",
-        contentType = ContentType.Text.Plain,
-        status = HttpStatusCode.OK)
+        text = "", contentType = ContentType.Text.Plain, status = HttpStatusCode.OK)
   }
 }

@@ -15,7 +15,7 @@ import io.ktor.server.testing.TestApplicationCall
 import io.ktor.server.testing.TestApplicationEngine
 import io.ktor.server.testing.contentType
 import io.ktor.server.testing.withTestApplication
-import me.fru1t.stak.server.components.session.Session
+import me.fru1t.stak.server.components.session.SessionController
 import me.fru1t.stak.server.components.user.UserController
 import me.fru1t.stak.server.ktor.testing.handleJsonRequest
 import me.fru1t.stak.server.models.Result
@@ -56,17 +56,17 @@ class UserHandlerTest {
         handleJsonRequest(TEST_USER_CREATE, TEST_GSON, HttpMethod.Post, TEST_USER_PATH, {})
   }
   @Mock private lateinit var mockUserController: UserController
-  @Mock private lateinit var mockSession: Session
+  @Mock private lateinit var mockSessionController: SessionController
   private lateinit var userHandler: UserHandler
 
   @BeforeEach fun setUp() {
     MockitoAnnotations.initMocks(this)
     whenever(mockUserController.createUser(any()))
         .thenReturn(Result(TEST_USER, HttpStatusCode.Created))
-    whenever(mockSession.login(any()))
+    whenever(mockSessionController.login(any()))
         .thenReturn(Result(TEST_USER_PRINCIPAL, HttpStatusCode.OK))
 
-    userHandler = UserHandler(mockUserController, mockSession)
+    userHandler = UserHandler(mockUserController, mockSessionController)
   }
 
   @Test fun createUser() = testWithUserHandler {
@@ -107,21 +107,21 @@ class UserHandlerTest {
   }
 
   @Test fun createUser_serviceUnavailable() = testWithUserHandler {
-    whenever(mockSession.login(any()))
+    whenever(mockSessionController.login(any()))
         .thenReturn(Result(httpStatusCode = HttpStatusCode.InternalServerError))
 
     handleCreateUserRequest().assertEmptyContent(HttpStatusCode.ServiceUnavailable)
   }
 
   @Test fun createUser_resetContent() = testWithUserHandler {
-    whenever(mockSession.login(any()))
+    whenever(mockSessionController.login(any()))
         .thenReturn(Result(httpStatusCode = HttpStatusCode.Unauthorized))
 
     handleCreateUserRequest().assertEmptyContent(HttpStatusCode.ResetContent)
   }
 
   @Test fun createUser_unexpectedSessionControllerResult_notImplemented() = testWithUserHandler {
-    whenever(mockSession.login(any()))
+    whenever(mockSessionController.login(any()))
         .thenReturn(Result(httpStatusCode = HttpStatusCode.MultipleChoices))
 
     handleCreateUserRequest().assertEmptyContent(HttpStatusCode.NotImplemented)

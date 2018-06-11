@@ -8,7 +8,7 @@ import me.fru1t.stak.server.models.UserPrincipal
  * Handles synchronizing state between requests by the same device. This component specifically
  * handles login security and any other persistent data within a single session.
  */
-interface Session {
+interface SessionController {
   /**
    * Attempts to start a new session by validating a user's [userPasswordCredential]. On successful
    * validation, this method will generate and store a session token and return the [UserPrincipal]

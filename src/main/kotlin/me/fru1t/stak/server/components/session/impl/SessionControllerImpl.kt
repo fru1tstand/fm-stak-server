@@ -7,7 +7,7 @@ import io.ktor.http.HttpStatusCode
 import me.fru1t.stak.server.Constants
 import me.fru1t.stak.server.components.database.Database
 import me.fru1t.stak.server.components.security.Security
-import me.fru1t.stak.server.components.session.Session
+import me.fru1t.stak.server.components.session.SessionController
 import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.UserPrincipal
 import mu.KLogging
@@ -15,12 +15,12 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Named
 
-/** The default implementation of [Session]. */
-class SessionImpl @Inject constructor(
+/** The default implementation of [SessionController]. */
+class SessionControllerImpl @Inject constructor(
     private val database: Database,
     @Named(Constants.NAMED_SESSION_TIMEOUT_HOURS) private val sessionTimeoutHours: Long,
     private val security: Security,
-    cacheTicker: Ticker) : Session {
+    cacheTicker: Ticker) : SessionController {
   companion object : KLogging() {
     private const val TOKEN_LENGTH = 128L
   }
