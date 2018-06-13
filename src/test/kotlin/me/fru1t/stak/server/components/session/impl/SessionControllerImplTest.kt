@@ -9,6 +9,7 @@ import io.ktor.http.isSuccess
 import me.fru1t.stak.server.components.database.Database
 import me.fru1t.stak.server.components.database.DatabaseResult
 import me.fru1t.stak.server.components.security.impl.FakeSecurity
+import me.fru1t.stak.server.components.session.SessionController
 import me.fru1t.stak.server.models.User
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -53,16 +54,16 @@ class SessionControllerImplTest {
     val result =
       sessionControllerImpl.login(UserPasswordCredential(TEST_VALID_USERNAME, TEST_VALID_PASSWORD))
 
-    assertThat(result.httpStatusCode.isSuccess()).isTrue()
+    assertThat(result.status).isEqualTo(SessionController.LoginStatus.SUCCESS)
+    assertThat(result.value).isNotNull()
     assertThat(result.value!!.username).isEqualTo(TEST_VALID_USERNAME)
-    assertThat(result.value!!.token).hasLength(128)
   }
 
   @Test fun login_invalidPassword() {
     val result =
       sessionControllerImpl.login(UserPasswordCredential(TEST_VALID_USERNAME, "invalid pass"))
 
-    assertThat(result.httpStatusCode).isEqualTo(HttpStatusCode.Unauthorized)
+    assertThat(result.status).isEqualTo(SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD)
     assertThat(result.value).isNull()
   }
 
@@ -72,7 +73,7 @@ class SessionControllerImplTest {
     val result =
       sessionControllerImpl.login(UserPasswordCredential("invalid username", TEST_VALID_PASSWORD))
 
-    assertThat(result.httpStatusCode).isEqualTo(HttpStatusCode.Unauthorized)
+    assertThat(result.status).isEqualTo(SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD)
     assertThat(result.value).isNull()
   }
 
@@ -82,7 +83,7 @@ class SessionControllerImplTest {
 
     val result = sessionControllerImpl.login(UserPasswordCredential("error", "password"))
 
-    assertThat(result.httpStatusCode).isEqualTo(HttpStatusCode.InternalServerError)
+    assertThat(result.status).isEqualTo(SessionController.LoginStatus.DATABASE_ERROR)
     assertThat(result.value).isNull()
   }
 

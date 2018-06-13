@@ -51,12 +51,7 @@ class SessionHandler @Inject constructor(private val sessionController: SessionC
   fun registerAuthentication(configuration: Authentication.Configuration) {
     configuration.basic(Constants.LOGIN_AUTH_NAME) {
       realm = REALM
-      validate { userPasswordCredential ->
-        run<Principal?> {
-          val result = sessionController.login(userPasswordCredential)
-          if (result.httpStatusCode.isSuccess()) result.value else null
-        }
-      }
+      validate { credentials -> sessionController.login(credentials).value }
     }
     configuration.form(SESSION_AUTH_NAME) {
       userParamName = SESSION_USER_PARAM_NAME

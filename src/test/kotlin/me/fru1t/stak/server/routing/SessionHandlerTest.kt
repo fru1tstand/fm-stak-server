@@ -16,6 +16,7 @@ import me.fru1t.stak.server.ktor.testing.addBasicAuthorizationHeader
 import me.fru1t.stak.server.ktor.testing.handleFormRequest
 import me.fru1t.stak.server.ktor.testing.setBody
 import me.fru1t.stak.server.models.LegacyResult
+import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.UserPrincipal
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,7 +25,11 @@ import org.mockito.MockitoAnnotations
 
 class SessionHandlerTest {
   companion object {
-    private val TEST_VALID_USER_PRINCIPAL_RESULT = LegacyResult(UserPrincipal("username", "sometoken"))
+    private val TEST_VALID_USER_PRINCIPAL_LEGACY_RESULT =
+      LegacyResult(UserPrincipal("username", "sometoken"))
+    private val TEST_VALID_USER_PRINCIPAL_RESULT
+        : Result<UserPrincipal?, SessionController.LoginStatus> =
+      Result(UserPrincipal("username", "sometoken"), SessionController.LoginStatus.SUCCESS)
   }
 
   @Mock private lateinit var mockSessionController: SessionController
@@ -38,13 +43,13 @@ class SessionHandlerTest {
 
   @Test fun registerAuthentication_form_invalidUserParamValue() = withSessionHandler {
     whenever(mockSessionController.getActiveSession(any()))
-        .thenReturn(TEST_VALID_USER_PRINCIPAL_RESULT)
+        .thenReturn(TEST_VALID_USER_PRINCIPAL_LEGACY_RESULT)
 
     val result = handleFormRequest(HttpMethod.Delete, "/session") {
       setBody {
         addParameter(SessionHandler.SESSION_USER_PARAM_NAME, "invalid")
         addParameter(
-            SessionHandler.SESSION_PASS_PARAM_NAME, TEST_VALID_USER_PRINCIPAL_RESULT.value!!.token)
+            SessionHandler.SESSION_PASS_PARAM_NAME, TEST_VALID_USER_PRINCIPAL_LEGACY_RESULT.value!!.token)
       }
     }
 
@@ -73,13 +78,13 @@ class SessionHandlerTest {
       addBasicAuthorizationHeader("test username", "test password")
     }
 
-    assertThat(result.response.content).isEqualTo(TEST_VALID_USER_PRINCIPAL_RESULT.value!!.token)
+    assertThat(result.response.content).isEqualTo(TEST_VALID_USER_PRINCIPAL_LEGACY_RESULT.value!!.token)
     assertThat(result.response.status()).isEqualTo(HttpStatusCode.OK)
   }
 
   @Test fun login_invalidCredentials() = withSessionHandler {
     whenever(mockSessionController.login(any()))
-        .thenReturn(LegacyResult(httpStatusCode = HttpStatusCode.Unauthorized))
+        .thenReturn(Result(null, SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD))
 
     val result = handleFormRequest(HttpMethod.Post, "/session") {
       addBasicAuthorizationHeader("test username", "test password")
@@ -90,7 +95,7 @@ class SessionHandlerTest {
 
   @Test fun logout() = withSessionHandler {
     whenever(mockSessionController.getActiveSession(any()))
-        .thenReturn(TEST_VALID_USER_PRINCIPAL_RESULT)
+        .thenReturn(TEST_VALID_USER_PRINCIPAL_LEGACY_RESULT)
 
     val result = handleFormRequest(HttpMethod.Delete, "/session") {
       addBasicAuthorizationHeader("test username", "test password")
@@ -98,7 +103,7 @@ class SessionHandlerTest {
         addParameter(
             SessionHandler.SESSION_USER_PARAM_NAME, SessionHandler.SESSION_USER_PARAM_VALUE)
         addParameter(
-            SessionHandler.SESSION_PASS_PARAM_NAME, TEST_VALID_USER_PRINCIPAL_RESULT.value!!.token)
+            SessionHandler.SESSION_PASS_PARAM_NAME, TEST_VALID_USER_PRINCIPAL_LEGACY_RESULT.value!!.token)
       }
     }
 

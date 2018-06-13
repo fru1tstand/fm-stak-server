@@ -4,6 +4,7 @@ import io.ktor.application.ApplicationCall
 import io.ktor.auth.UserPasswordCredential
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.response.respondText
 import io.ktor.routing.Route
 import io.ktor.routing.post
 import io.ktor.routing.route
@@ -76,17 +77,19 @@ class UserHandler @Inject constructor(
 
     val sessionResult =
       sessionController.login(UserPasswordCredential(userCreate.username, userCreate.password))
-    return when (sessionResult.httpStatusCode) {
+    return when (sessionResult.status) {
       // Created - Success!
-      HttpStatusCode.OK ->
-        call.respondResult(
-            sessionResult.copy(httpStatusCode = HttpStatusCode.Created), { it!!.token })
+      SessionController.LoginStatus.SUCCESS ->
+        call.respondText(
+            text = sessionResult.value!!.token,
+            contentType = ContentType.Text.Plain,
+            status = HttpStatusCode.Created)
       // Service unavailable
-      HttpStatusCode.InternalServerError -> call.respondEmpty(HttpStatusCode.ServiceUnavailable)
+      SessionController.LoginStatus.DATABASE_ERROR ->
+        call.respondEmpty(HttpStatusCode.ServiceUnavailable)
       // Reset content
-      HttpStatusCode.Unauthorized -> call.respondEmpty(HttpStatusCode.ResetContent)
-      // NotImplemented - Unexpected
-      else -> call.respondResultNotImplemented(sessionResult, SessionController::login, logger)
+      SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD ->
+        call.respondEmpty(HttpStatusCode.ResetContent)
     }
   }
 }

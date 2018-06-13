@@ -9,6 +9,7 @@ import me.fru1t.stak.server.components.database.Database
 import me.fru1t.stak.server.components.security.Security
 import me.fru1t.stak.server.components.session.SessionController
 import me.fru1t.stak.server.models.LegacyResult
+import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.UserPrincipal
 import mu.KLogging
 import java.util.concurrent.TimeUnit
@@ -30,21 +31,22 @@ class SessionControllerImpl @Inject constructor(
       .expireAfterAccess(sessionTimeoutHours, TimeUnit.HOURS)
       .build<String, UserPrincipal>()
 
-  override fun login(userPasswordCredential: UserPasswordCredential): LegacyResult<UserPrincipal> {
+  override fun login(userPasswordCredential: UserPasswordCredential)
+      : Result<UserPrincipal?, SessionController.LoginStatus> {
     val userResult = database.getUserByUsername(userPasswordCredential.name)
     if (userResult.error != null && userResult.isDatabaseError) {
       logger.error { "Database error: ${userResult.error}" }
-      return LegacyResult(httpStatusCode = HttpStatusCode.InternalServerError)
+      return Result(null, SessionController.LoginStatus.DATABASE_ERROR)
     }
 
     if (!security.equals(userPasswordCredential.password, userResult.result?.passwordHash)) {
-      return LegacyResult(httpStatusCode = HttpStatusCode.Unauthorized)
+      return Result(null, SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD)
     }
 
     val userPrincipal = UserPrincipal(
         username = userResult.result!!.username, token = security.generateRandomToken(TOKEN_LENGTH))
     activeSessions.put(userPrincipal.token, userPrincipal)
-    return LegacyResult(value = userPrincipal)
+    return Result(userPrincipal, SessionController.LoginStatus.SUCCESS)
   }
 
   override fun logout(token: String): Boolean {

@@ -19,6 +19,7 @@ import me.fru1t.stak.server.components.session.SessionController
 import me.fru1t.stak.server.components.user.UserController
 import me.fru1t.stak.server.ktor.testing.handleJsonRequest
 import me.fru1t.stak.server.models.LegacyResult
+import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.User
 import me.fru1t.stak.server.models.UserCreate
 import me.fru1t.stak.server.models.UserPrincipal
@@ -64,7 +65,7 @@ class UserHandlerTest {
     whenever(mockUserController.createUser(any()))
         .thenReturn(LegacyResult(TEST_USER, HttpStatusCode.Created))
     whenever(mockSessionController.login(any()))
-        .thenReturn(LegacyResult(TEST_USER_PRINCIPAL, HttpStatusCode.OK))
+        .thenReturn(Result(TEST_USER_PRINCIPAL, SessionController.LoginStatus.SUCCESS))
 
     userHandler = UserHandler(mockUserController, mockSessionController)
   }
@@ -108,23 +109,16 @@ class UserHandlerTest {
 
   @Test fun createUser_serviceUnavailable() = testWithUserHandler {
     whenever(mockSessionController.login(any()))
-        .thenReturn(LegacyResult(httpStatusCode = HttpStatusCode.InternalServerError))
+        .thenReturn(Result(null, SessionController.LoginStatus.DATABASE_ERROR))
 
     handleCreateUserRequest().assertEmptyContent(HttpStatusCode.ServiceUnavailable)
   }
 
   @Test fun createUser_resetContent() = testWithUserHandler {
     whenever(mockSessionController.login(any()))
-        .thenReturn(LegacyResult(httpStatusCode = HttpStatusCode.Unauthorized))
+        .thenReturn(Result(null, SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD))
 
     handleCreateUserRequest().assertEmptyContent(HttpStatusCode.ResetContent)
-  }
-
-  @Test fun createUser_unexpectedSessionControllerResult_notImplemented() = testWithUserHandler {
-    whenever(mockSessionController.login(any()))
-        .thenReturn(LegacyResult(httpStatusCode = HttpStatusCode.MultipleChoices))
-
-    handleCreateUserRequest().assertEmptyContent(HttpStatusCode.NotImplemented)
   }
 
   /** Extend this to automatically set up [UserHandler] within the test application. */
