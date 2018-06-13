@@ -14,10 +14,9 @@ class LegacyResultTest {
 }
 
 class ResultTest {
-  /** Test enum that implements [StatusEnum]. */
-  enum class TestStatusEnum(val httpStatusCode: HttpStatusCode) : StatusEnum {
-    TEST_VALUE(HttpStatusCode.OK);
-    override fun getStatus(): HttpStatusCode = httpStatusCode
+  /** A testing enum used as the status state for [Result]. */
+  enum class TestStatusEnum {
+    TEST_VALUE
   }
 
   @Test fun default() {

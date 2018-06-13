@@ -23,28 +23,16 @@ data class LegacyResult<T>(
     val httpStatusCode: HttpStatusCode = HttpStatusCode.OK)
 
 /**
- * A [StatusEnum] defines (at least) a single [StatusEnum.getStatus] method that retrieves an
- * [HttpStatusCode] that corresponds to the enum value.
- * @see Result
- */
-interface StatusEnum {
-  /** Fetches the [HttpStatusCode] associated to this status enum. */
-  fun getStatus(): HttpStatusCode
-}
-
-/**
  * Provides context to a function's return by providing two fields: the yielded [value] and the
  * [status]. Results are most notably used in `when` expression statements (ie. `return when(...)`
  * or `val foo = when(...)`) against the [status] which enables static checking to validate that
  * all possibilities of the [status] are accounted for.
  * @param V the value type which can be nullable or even [Nothing].
- * @param S the status type which must be an [Enum] that implements [StatusEnum].
+ * @param S the status type which must be an [Enum].
  */
-data class Result<V, S>(
+data class Result<V, S : Enum<S>>(
     /** The yielded value of the method. */
     val value: V,
 
     /** Context for why the method returned. */
     val status: S)
-    where S : Enum<S>,
-          S : StatusEnum
