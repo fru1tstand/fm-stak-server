@@ -3,12 +3,10 @@ package me.fru1t.stak.server.components.session.impl
 import com.google.common.base.Ticker
 import com.google.common.cache.CacheBuilder
 import io.ktor.auth.UserPasswordCredential
-import io.ktor.http.HttpStatusCode
 import me.fru1t.stak.server.Constants
 import me.fru1t.stak.server.components.database.Database
 import me.fru1t.stak.server.components.security.Security
 import me.fru1t.stak.server.components.session.SessionController
-import me.fru1t.stak.server.models.LegacyResult
 import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.UserPrincipal
 import mu.KLogging
@@ -57,8 +55,9 @@ class SessionControllerImpl @Inject constructor(
     return false
   }
 
-  override fun getActiveSession(token: String): LegacyResult<UserPrincipal> =
+  override fun getActiveSession(token: String)
+      : Result<UserPrincipal?, SessionController.GetActiveSessionStatus> =
     activeSessions.getIfPresent(token)
-        ?.let { LegacyResult(value = it) }
-        ?: LegacyResult(httpStatusCode = HttpStatusCode.Unauthorized)
+        ?.let { Result(it, SessionController.GetActiveSessionStatus.SUCCESS) }
+        ?: Result(null, SessionController.GetActiveSessionStatus.SESSION_NOT_FOUND)
 }

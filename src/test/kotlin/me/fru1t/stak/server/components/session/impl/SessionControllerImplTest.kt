@@ -4,8 +4,6 @@ import com.google.common.testing.FakeTicker
 import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.whenever
 import io.ktor.auth.UserPasswordCredential
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.isSuccess
 import me.fru1t.stak.server.components.database.Database
 import me.fru1t.stak.server.components.database.DatabaseResult
 import me.fru1t.stak.server.components.security.impl.FakeSecurity
@@ -104,14 +102,14 @@ class SessionControllerImplTest {
 
     val result = sessionControllerImpl.getActiveSession(activeSession.value!!.token)
 
-    assertThat(result.httpStatusCode.isSuccess()).isTrue()
+    assertThat(result.status).isEqualTo(SessionController.GetActiveSessionStatus.SUCCESS)
     assertThat(result.value).isEqualTo(activeSession.value)
   }
 
   @Test fun getActiveSession_invalidToken() {
     val result = sessionControllerImpl.getActiveSession("invalid token")
 
-    assertThat(result.httpStatusCode).isEqualTo(HttpStatusCode.Unauthorized)
+    assertThat(result.status).isEqualTo(SessionController.GetActiveSessionStatus.SESSION_NOT_FOUND)
     assertThat(result.value).isNull()
   }
 
@@ -127,7 +125,7 @@ class SessionControllerImplTest {
     val result = sessionControllerImpl.getActiveSession(activeSession.value!!.token)
 
     // Verify it doesn't exist
-    assertThat(result.httpStatusCode).isEqualTo(HttpStatusCode.Unauthorized)
+    assertThat(result.status).isEqualTo(SessionController.GetActiveSessionStatus.SESSION_NOT_FOUND)
     assertThat(result.value).isNull()
   }
 }

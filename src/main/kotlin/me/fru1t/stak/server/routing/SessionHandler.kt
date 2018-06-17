@@ -13,7 +13,6 @@ import io.ktor.auth.form
 import io.ktor.features.origin
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.isSuccess
 import io.ktor.response.respondText
 import io.ktor.routing.Route
 import io.ktor.routing.delete
@@ -64,7 +63,7 @@ class SessionHandler @Inject constructor(private val sessionController: SessionC
           }
 
           val result = sessionController.getActiveSession(userPasswordCredential.password)
-          if (!result.httpStatusCode.isSuccess()) {
+          if (result.status != SessionController.GetActiveSessionStatus.SUCCESS) {
             logger.debug {
               "Session validation failed for host ${request.origin.host}, gave " +
                   userPasswordCredential.password

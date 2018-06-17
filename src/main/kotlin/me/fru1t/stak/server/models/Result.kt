@@ -30,7 +30,7 @@ data class LegacyResult<T>(
  * @param V the value type which can be nullable or even [Nothing].
  * @param S the status type which must be an [Enum].
  */
-data class Result<V, S : Enum<S>>(
+data class Result<out V, S : Enum<S>>(
     /** The yielded value of the method. */
     val value: V,
 

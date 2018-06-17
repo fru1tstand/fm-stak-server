@@ -36,6 +36,18 @@ interface SessionController {
     SUCCESS
   }
 
+  /** Status states for [getActiveSession]. */
+  enum class GetActiveSessionStatus {
+    /** An unexpected database error occurred. Returns `null`. */
+    DATABASE_ERROR,
+
+    /** The session wasn't found within the database. Returns `null`. */
+    SESSION_NOT_FOUND,
+
+    /** Successfully found the session. Returns the associated [UserPrincipal]. */
+    SUCCESS
+  }
+
   /**
    * Attempts to start a new session by validating a user's [userPasswordCredential]. On successful
    * validation, this method will generate and store a session token and return the [UserPrincipal]
@@ -51,7 +63,7 @@ interface SessionController {
 
   /**
    * Attempts to retrieve an existing session by its [token]. Logs any internal errors and returns
-   * an empty [LegacyResult] if no session at [token] was found.
+   * an empty [LegacyResult] if no session at [token] was found. See [GetActiveSessionStatus].
    */
-  fun getActiveSession(token: String): LegacyResult<UserPrincipal>
+  fun getActiveSession(token: String): Result<UserPrincipal?, GetActiveSessionStatus>
 }
