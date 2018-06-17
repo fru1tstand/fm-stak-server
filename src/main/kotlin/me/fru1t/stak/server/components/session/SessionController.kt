@@ -1,7 +1,6 @@
 package me.fru1t.stak.server.components.session
 
 import io.ktor.auth.UserPasswordCredential
-import me.fru1t.stak.server.models.LegacyResult
 import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.UserPrincipal
 
@@ -63,7 +62,7 @@ interface SessionController {
 
   /**
    * Attempts to retrieve an existing session by its [token]. Logs any internal errors and returns
-   * an empty [LegacyResult] if no session at [token] was found. See [GetActiveSessionStatus].
+   * an empty [Result] if no session at [token] was found. See [GetActiveSessionStatus].
    */
   fun getActiveSession(token: String): Result<UserPrincipal?, GetActiveSessionStatus>
 }
