@@ -9,7 +9,7 @@ apply plugin: 'org.junit.platform.gradle.plugin'
 apply plugin: 'jacoco'
 
 buildscript {
-    ext.kotlin_version = '1.2.41'
+    ext.kotlin_version = '1.2.50'
     ext.ktor_version = '0.9.2'
     ext.junit_version = '1.0.2'
     ext.junit_jupiter_version = '5.0.2'
@@ -46,7 +46,7 @@ dependencies {
     kapt "com.google.dagger:dagger-compiler:$dagger_version"
 
     testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: junit_jupiter_version
-    testCompile group: 'com.google.truth', name: 'truth', version: '0.33'
+    testCompile group: 'com.google.truth', name: 'truth', version: '0.41'
     testCompile group: 'com.nhaarman', name: 'mockito-kotlin', version: '1.5.0'
     testCompile group: 'com.google.guava', name: 'guava-testlib', version: guava_version
 
