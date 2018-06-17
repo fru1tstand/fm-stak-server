@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Named
 
-/** The default implementation of [SessionController]. */
+/** The default implementation of [SessionController] which uses an in-memory, expiring cache. */
 class SessionControllerImpl @Inject constructor(
     private val database: Database,
     @Named(Constants.NAMED_SESSION_TIMEOUT_HOURS) private val sessionTimeoutHours: Long,
