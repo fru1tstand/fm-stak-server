@@ -1,10 +1,10 @@
 package me.fru1t.stak.server.components.user.impl
 
-import io.ktor.http.HttpStatusCode
 import me.fru1t.stak.server.components.database.Database
 import me.fru1t.stak.server.components.security.Security
 import me.fru1t.stak.server.components.user.UserController
-import me.fru1t.stak.server.models.LegacyResult
+import me.fru1t.stak.server.components.user.UserController.CreateUserStatus
+import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.User
 import me.fru1t.stak.server.models.UserCreate
 import javax.inject.Inject
@@ -13,7 +13,7 @@ import javax.inject.Inject
 class UserControllerImpl @Inject constructor(
     private val database: Database,
     private val security: Security) : UserController {
-  override fun createUser(userCreate: UserCreate): LegacyResult<User> {
+  override fun createUser(userCreate: UserCreate): Result<User?, CreateUserStatus> {
     val newUser =
       User(
           username = userCreate.username,
@@ -22,12 +22,14 @@ class UserControllerImpl @Inject constructor(
 
     val createUserResult = database.createUser(newUser)
     if (!createUserResult.didSucceed) {
-      return LegacyResult(
-          httpStatusCode =
+      return Result(
+          null,
           if (createUserResult.isDatabaseError)
-            HttpStatusCode.InternalServerError else HttpStatusCode.Conflict)
+            CreateUserStatus.DATABASE_ERROR
+          else
+            CreateUserStatus.USERNAME_ALREADY_EXISTS)
     }
 
-    return LegacyResult(newUser, HttpStatusCode.Created)
+    return Result(newUser, CreateUserStatus.SUCCESS)
   }
 }

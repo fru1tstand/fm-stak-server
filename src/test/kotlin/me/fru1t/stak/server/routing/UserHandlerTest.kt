@@ -16,9 +16,10 @@ import io.ktor.server.testing.TestApplicationEngine
 import io.ktor.server.testing.contentType
 import io.ktor.server.testing.withTestApplication
 import me.fru1t.stak.server.components.session.SessionController
+import me.fru1t.stak.server.components.session.SessionController.LoginStatus
 import me.fru1t.stak.server.components.user.UserController
+import me.fru1t.stak.server.components.user.UserController.CreateUserStatus
 import me.fru1t.stak.server.ktor.testing.handleJsonRequest
-import me.fru1t.stak.server.models.LegacyResult
 import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.User
 import me.fru1t.stak.server.models.UserCreate
@@ -62,10 +63,11 @@ class UserHandlerTest {
 
   @BeforeEach fun setUp() {
     MockitoAnnotations.initMocks(this)
+
     whenever(mockUserController.createUser(any()))
-        .thenReturn(LegacyResult(TEST_USER, HttpStatusCode.Created))
+        .thenReturn(Result(TEST_USER, CreateUserStatus.SUCCESS))
     whenever(mockSessionController.login(any()))
-        .thenReturn(Result(TEST_USER_PRINCIPAL, SessionController.LoginStatus.SUCCESS))
+        .thenReturn(Result(TEST_USER_PRINCIPAL, LoginStatus.SUCCESS))
 
     userHandler = UserHandler(mockUserController, mockSessionController)
   }
@@ -88,35 +90,28 @@ class UserHandlerTest {
 
   @Test fun createUser_conflict() = testWithUserHandler {
     whenever(mockUserController.createUser(any()))
-        .thenReturn(LegacyResult(httpStatusCode = HttpStatusCode.Conflict))
+        .thenReturn(Result(null, CreateUserStatus.USERNAME_ALREADY_EXISTS))
 
     handleCreateUserRequest().assertEmptyContent(HttpStatusCode.Conflict)
   }
 
   @Test fun createUser_internalServerError() = testWithUserHandler {
     whenever(mockUserController.createUser(any()))
-        .thenReturn(LegacyResult(httpStatusCode = HttpStatusCode.InternalServerError))
+        .thenReturn(Result(null, CreateUserStatus.DATABASE_ERROR))
 
     handleCreateUserRequest().assertEmptyContent(HttpStatusCode.InternalServerError)
   }
 
-  @Test fun createUser_unexpectedUserControllerResult_notImplemented() = testWithUserHandler {
-    whenever(mockUserController.createUser(any()))
-        .thenReturn(LegacyResult(httpStatusCode = HttpStatusCode.LengthRequired))
-
-    handleCreateUserRequest().assertEmptyContent(HttpStatusCode.NotImplemented)
-  }
-
   @Test fun createUser_serviceUnavailable() = testWithUserHandler {
     whenever(mockSessionController.login(any()))
-        .thenReturn(Result(null, SessionController.LoginStatus.DATABASE_ERROR))
+        .thenReturn(Result(null, LoginStatus.DATABASE_ERROR))
 
     handleCreateUserRequest().assertEmptyContent(HttpStatusCode.ServiceUnavailable)
   }
 
   @Test fun createUser_resetContent() = testWithUserHandler {
     whenever(mockSessionController.login(any()))
-        .thenReturn(Result(null, SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD))
+        .thenReturn(Result(null, LoginStatus.BAD_USERNAME_OR_PASSWORD))
 
     handleCreateUserRequest().assertEmptyContent(HttpStatusCode.ResetContent)
   }

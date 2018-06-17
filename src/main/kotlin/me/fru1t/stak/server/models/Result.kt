@@ -27,6 +27,9 @@ data class LegacyResult<T>(
  * [status]. Results are most notably used in `when` expression statements (ie. `return when(...)`
  * or `val foo = when(...)`) against the [status] which enables static checking to validate that
  * all possibilities of the [status] are accounted for.
+ *
+ * Note that one should not document parameters for this data class. [Result] is somewhat ubiquitous
+ * within this application and will **not** change without extensive review for alternatives.
  * @param V the value type which can be nullable or even [Nothing].
  * @param S the status type which must be an [Enum].
  */

@@ -1,23 +1,35 @@
 package me.fru1t.stak.server.components.user
 
-import io.ktor.http.HttpStatusCode
-import me.fru1t.stak.server.models.LegacyResult
+import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.User
 import me.fru1t.stak.server.models.UserCreate
 
 /** Handles manipulation of [User]s like creation, modification, and deletion. */
 interface UserController {
+  /** Possible status states for [createUser]. */
+  enum class CreateUserStatus {
+    /**
+     * A [User] was successfully created and inserted into the database. Returns the resulting
+     * [User] object.
+     */
+    SUCCESS,
+
+    /**
+     * Failed to create user due to the [User.username] conflicting with an existing [User]. This
+     * status implicitly states that a round-trip to the database completed successfully.
+     */
+    USERNAME_ALREADY_EXISTS,
+
+    /**
+     * Failed to create user due to a failure with the database. This could represent a temporary
+     * failure (ie. network error) or a permanent one (ie. implementation error).
+     */
+    DATABASE_ERROR
+  }
+
   /**
-   * Attempts to create a new user from [userCreate].
-   *
-   * @return The resulting [User] if successful, otherwise `null`. Possible
-   * [LegacyResult.httpStatusCode]s:
-   *
-   * * [HttpStatusCode.Created] - A new [User] was created successfully and will be returned in the
-   *   [LegacyResult.value]. This is the only response code which will have a non-null [LegacyResult.value].
-   * * [HttpStatusCode.Conflict] - The [User.username] already exists so a new one with the same
-   *   username cannot be created.
-   * * [HttpStatusCode.InternalServerError] - A database error occurred.
+   * Attempts to create a new user from [userCreate]. Returns the resulting [User] on
+   * [CreateUserStatus.SUCCESS], otherwise `null`.
    */
-  fun createUser(userCreate: UserCreate): LegacyResult<User>
+  fun createUser(userCreate: UserCreate): Result<User?, CreateUserStatus>
 }

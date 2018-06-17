@@ -9,11 +9,11 @@ import io.ktor.routing.Route
 import io.ktor.routing.post
 import io.ktor.routing.route
 import me.fru1t.stak.server.components.session.SessionController
+import me.fru1t.stak.server.components.session.SessionController.LoginStatus
 import me.fru1t.stak.server.components.user.UserController
+import me.fru1t.stak.server.components.user.UserController.CreateUserStatus
 import me.fru1t.stak.server.ktor.receiveOrBadRequest
 import me.fru1t.stak.server.ktor.respondEmpty
-import me.fru1t.stak.server.ktor.respondResult
-import me.fru1t.stak.server.ktor.respondResultNotImplemented
 import me.fru1t.stak.server.models.User
 import me.fru1t.stak.server.models.UserCreate
 import mu.KLogging
@@ -51,9 +51,6 @@ class UserHandler @Inject constructor(
    * * [HttpStatusCode.ServiceUnavailable] - The [User] was successfully created, but the session
    *   failed to start due to database issues. A retry should not be attempted as the [User] has
    *   already been created. Instead, the client should prompt to log in.
-   * * [HttpStatusCode.NotImplemented] - Either creating the [User] or starting the session produced
-   *   an unexpected result. This *should never* happen as it means this method isn't implemented
-   *   correctly. No advice for the client except to submit a bug report.
    * * [HttpStatusCode.Created] - The [User] was created successfully, a new session was started,
    *   and the session token is returned in the response body as [ContentType.Text.Plain]. The
    *   client should accept and use the token to access privileged content.
@@ -63,32 +60,29 @@ class UserHandler @Inject constructor(
     val userCreate = call.receiveOrBadRequest<UserCreate>() ?: return
 
     val createUserResult = userController.createUser(userCreate)
-    when (createUserResult.httpStatusCode) {
+    when (createUserResult.status) {
       // Good. Continue to starting a session.
-      HttpStatusCode.Created -> Unit
-      // Conflict or InternalServerError
-      HttpStatusCode.Conflict, HttpStatusCode.InternalServerError ->
-        return call.respondResult(createUserResult)
-      // NotImplemented - Unexpected
-      else ->
-        return call.respondResultNotImplemented(
-            createUserResult, UserController::createUser, logger)
+      CreateUserStatus.SUCCESS -> Unit
+      // Conflict
+      CreateUserStatus.USERNAME_ALREADY_EXISTS ->
+        return call.respondEmpty(HttpStatusCode.Conflict)
+      // InternalServerError
+      CreateUserStatus.DATABASE_ERROR ->
+        return call.respondEmpty(HttpStatusCode.InternalServerError)
     }
 
     val sessionResult =
       sessionController.login(UserPasswordCredential(userCreate.username, userCreate.password))
     return when (sessionResult.status) {
       // Created - Success!
-      SessionController.LoginStatus.SUCCESS ->
+      LoginStatus.SUCCESS ->
         call.respondText(
-            text = sessionResult.value!!.token,
-            contentType = ContentType.Text.Plain,
-            status = HttpStatusCode.Created)
+            sessionResult.value!!.token, ContentType.Text.Plain, HttpStatusCode.Created)
       // Service unavailable
-      SessionController.LoginStatus.DATABASE_ERROR ->
+      LoginStatus.DATABASE_ERROR ->
         call.respondEmpty(HttpStatusCode.ServiceUnavailable)
       // Reset content
-      SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD ->
+      LoginStatus.BAD_USERNAME_OR_PASSWORD ->
         call.respondEmpty(HttpStatusCode.ResetContent)
     }
   }
