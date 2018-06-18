@@ -91,7 +91,7 @@ class UserHandlerTest {
 
   @Test fun createUser_conflict() = testWithUserHandler {
     whenever(mockUserController.createUser(any()))
-        .thenReturn(Result(null, CreateUserStatus.USERNAME_ALREADY_EXISTS))
+        .thenReturn(Result(null, CreateUserStatus.USER_ID_ALREADY_EXISTS))
 
     handleCreateUserRequest().assertEmptyContent(HttpStatusCode.Conflict)
   }

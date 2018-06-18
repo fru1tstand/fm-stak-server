@@ -5,8 +5,10 @@ import com.google.common.cache.CacheBuilder
 import io.ktor.auth.UserPasswordCredential
 import me.fru1t.stak.server.Constants
 import me.fru1t.stak.server.components.database.Database
+import me.fru1t.stak.server.components.database.Database.GetUserByIdStatus
 import me.fru1t.stak.server.components.security.Security
 import me.fru1t.stak.server.components.session.SessionController
+import me.fru1t.stak.server.components.session.SessionController.LoginStatus
 import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.UserId
 import me.fru1t.stak.server.models.UserPrincipal
@@ -32,18 +34,21 @@ class SessionControllerImpl @Inject constructor(
 
   override fun login(userPasswordCredential: UserPasswordCredential)
       : Result<UserPrincipal?, SessionController.LoginStatus> {
+    // Fetch from database
     val userResult = database.getUserById(UserId(userPasswordCredential.name))
-    if (userResult.error != null && userResult.isDatabaseError) {
-      logger.error { "Database error: ${userResult.error}" }
-      return Result(null, SessionController.LoginStatus.DATABASE_ERROR)
+    val user = when (userResult.status) {
+      GetUserByIdStatus.DATABASE_ERROR -> return Result(null, LoginStatus.DATABASE_ERROR)
+      GetUserByIdStatus.USER_ID_NOT_FOUND,
+      GetUserByIdStatus.SUCCESS -> userResult.value
     }
 
-    if (!security.equals(userPasswordCredential.password, userResult.result?.passwordHash)) {
+    // Verify password
+    if (!security.equals(userPasswordCredential.password, user?.passwordHash)) {
       return Result(null, SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD)
     }
 
     val userPrincipal =
-      UserPrincipal(userResult.result!!.userId, security.generateRandomToken(TOKEN_LENGTH))
+      UserPrincipal(user!!.userId, security.generateRandomToken(TOKEN_LENGTH))
     activeSessions.put(userPrincipal.token, userPrincipal)
     return Result(userPrincipal, SessionController.LoginStatus.SUCCESS)
 }

@@ -4,9 +4,9 @@ import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.whenever
 import me.fru1t.stak.server.components.database.Database
-import me.fru1t.stak.server.components.database.DatabaseOperationResult
 import me.fru1t.stak.server.components.security.Security
-import me.fru1t.stak.server.components.user.UserController.CreateUserStatus
+import me.fru1t.stak.server.components.user.UserController
+import me.fru1t.stak.server.models.Status
 import me.fru1t.stak.server.models.UserCreate
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -28,7 +28,7 @@ class UserControllerImplTest {
   @BeforeEach internal fun setUp() {
     MockitoAnnotations.initMocks(this)
 
-    whenever(mockDatabase.createUser(any())).thenReturn(DatabaseOperationResult(true))
+    whenever(mockDatabase.createUser(any())).thenReturn(Status(Database.CreateUserStatus.SUCCESS))
     whenever(mockSecurity.hash(any())).thenReturn(TEST_PASSWORD_HASH)
 
     userControllerImpl = UserControllerImpl(mockDatabase, mockSecurity)
@@ -38,7 +38,7 @@ class UserControllerImplTest {
 
     val result = userControllerImpl.createUser(TEST_USER_CREATE)
 
-    assertThat(result.status).isEqualTo(CreateUserStatus.SUCCESS)
+    assertThat(result.status).isEqualTo(UserController.CreateUserStatus.SUCCESS)
     assertThat(result.value!!.userId.username).isEqualTo(TEST_USER_CREATE.username)
     assertThat(result.value!!.passwordHash).isEqualTo(TEST_PASSWORD_HASH)
     assertThat(result.value!!.displayName).isEqualTo(TEST_USER_CREATE.displayName)
@@ -46,23 +46,23 @@ class UserControllerImplTest {
 
   @Test fun createUser_databaseError() {
     whenever(mockDatabase.createUser(any()))
-        .thenReturn(DatabaseOperationResult(error = "some error", isDatabaseError = true))
+        .thenReturn(Status(Database.CreateUserStatus.DATABASE_ERROR))
     whenever(mockSecurity.hash(any())).thenReturn(TEST_PASSWORD_HASH)
 
     val result = userControllerImpl.createUser(TEST_USER_CREATE)
 
-    assertThat(result.status).isEqualTo(CreateUserStatus.DATABASE_ERROR)
+    assertThat(result.status).isEqualTo(UserController.CreateUserStatus.DATABASE_ERROR)
     assertThat(result.value).isNull()
   }
 
   @Test fun createUser_existingUser() {
     whenever(mockDatabase.createUser(any()))
-        .thenReturn(DatabaseOperationResult(error = "non-database error"))
+        .thenReturn(Status(Database.CreateUserStatus.USER_ID_ALREADY_EXISTS))
     whenever(mockSecurity.hash(any())).thenReturn(TEST_PASSWORD_HASH)
 
     val result = userControllerImpl.createUser(TEST_USER_CREATE)
 
-    assertThat(result.status).isEqualTo(CreateUserStatus.USERNAME_ALREADY_EXISTS)
+    assertThat(result.status).isEqualTo(UserController.CreateUserStatus.USER_ID_ALREADY_EXISTS)
     assertThat(result.value).isNull()
   }
 }

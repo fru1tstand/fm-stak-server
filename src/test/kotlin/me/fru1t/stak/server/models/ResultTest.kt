@@ -16,3 +16,15 @@ class ResultTest {
     assertThat(result.status).isEqualTo(TestStatusEnum.TEST_VALUE)
   }
 }
+
+class StatusTest {
+  enum class TestStatusEnum {
+    TEST_VALUE
+  }
+
+  @Test fun default() {
+    val result = Status(TestStatusEnum.TEST_VALUE)
+
+    assertThat(result.status).isEqualTo(TestStatusEnum.TEST_VALUE)
+  }
+}

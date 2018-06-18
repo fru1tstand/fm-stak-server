@@ -64,7 +64,7 @@ class UserHandler @Inject constructor(
       // Good. Continue to starting a session.
       CreateUserStatus.SUCCESS -> Unit
       // Conflict
-      CreateUserStatus.USERNAME_ALREADY_EXISTS ->
+      CreateUserStatus.USER_ID_ALREADY_EXISTS ->
         return call.respondEmpty(HttpStatusCode.Conflict)
       // InternalServerError
       CreateUserStatus.DATABASE_ERROR ->

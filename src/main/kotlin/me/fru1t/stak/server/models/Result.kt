@@ -17,3 +17,13 @@ data class Result<out V, S : Enum<S>>(
 
     /** Context for why the method returned. */
     val status: S)
+
+/**
+ * Provides context to a function's return by providing a single generic [status] enum field.
+ * Statuses are most notable used in `when` expression statements which enables static checking that
+ * validates all possibilities of [S] are checked for which is useful when making changes to [S].
+ * @param S the status type which must eb an [Enum].
+ */
+data class Status<S : Enum<S>>(
+    /** Context for why the method returned. */
+    val status : S)

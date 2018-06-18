@@ -3,7 +3,7 @@ package me.fru1t.stak.server.components.database.json
 import com.google.gson.Gson
 import com.google.gson.JsonParseException
 import com.google.gson.reflect.TypeToken
-import me.fru1t.stak.server.components.database.DatabaseOperationResult
+import me.fru1t.stak.server.models.Status
 import mu.KLogging
 import java.io.IOException
 import java.nio.file.Files
@@ -24,6 +24,14 @@ class JsonTable<T : Any>(
     private val tableModelClass: KClass<T>,
     private val gson: Gson) {
   companion object : KLogging()
+  /** Status states for [writeToDisk]. */
+  enum class WriteToDiskStatus {
+    /** Successfully wrote to the file. */
+    SUCCESS,
+
+    /** Failed to write to the file due to an IO error. */
+    IO_EXCEPTION
+  }
 
   val contents: MutableMap<String, T> by lazy {
     if (!Files.exists(tableFilePathAndName)) {
@@ -48,7 +56,7 @@ class JsonTable<T : Any>(
   }
 
   /** Attempts to commit the current state of this [JsonTable] to disk. */
-  fun writeToDisk(): DatabaseOperationResult {
+  fun writeToDisk(): Status<WriteToDiskStatus> {
     try {
       Files.write(tableFilePathAndName, gson.toJson(contents).toByteArray(JsonDatabase.CHARSET))
     } catch(e: IOException) {
@@ -56,8 +64,8 @@ class JsonTable<T : Any>(
         "Couldn't write table ${tableModelClass.simpleName} to disk at " +
             "${tableFilePathAndName.normalize()}."
       }
-      return DatabaseOperationResult(error = e.message, isDatabaseError = true)
+      return Status(WriteToDiskStatus.IO_EXCEPTION)
     }
-    return DatabaseOperationResult(didSucceed = true)
+    return Status(WriteToDiskStatus.SUCCESS)
   }
 }

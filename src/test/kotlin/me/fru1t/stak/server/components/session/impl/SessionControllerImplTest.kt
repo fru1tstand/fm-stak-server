@@ -5,9 +5,9 @@ import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.whenever
 import io.ktor.auth.UserPasswordCredential
 import me.fru1t.stak.server.components.database.Database
-import me.fru1t.stak.server.components.database.DatabaseResult
 import me.fru1t.stak.server.components.security.impl.FakeSecurity
 import me.fru1t.stak.server.components.session.SessionController
+import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.User
 import me.fru1t.stak.server.models.UserId
 import org.junit.jupiter.api.BeforeEach
@@ -39,11 +39,12 @@ class SessionControllerImplTest {
     testValidPasswordHash = fakeSecurity.hash(TEST_VALID_PASSWORD)
     whenever(mockDatabase.getUserById(TEST_VALID_USER_ID))
         .thenReturn(
-            DatabaseResult(
-                result = User(
+            Result(
+                User(
                     userId = TEST_VALID_USER_ID,
                     passwordHash = testValidPasswordHash,
-                    displayName = "Test Name")))
+                    displayName = "Test Name"),
+                Database.GetUserByIdStatus.SUCCESS))
 
     sessionControllerImpl =
         SessionControllerImpl(mockDatabase, TEST_SESSION_TIMEOUT_HOURS, fakeSecurity, fakeTicker)
@@ -70,7 +71,7 @@ class SessionControllerImplTest {
 
   @Test fun login_invalidUsername() {
     whenever(mockDatabase.getUserById(UserId("invalid username")))
-        .thenReturn(DatabaseResult(error = "User not found"))
+        .thenReturn(Result(null, Database.GetUserByIdStatus.USER_ID_NOT_FOUND))
     val result =
       sessionControllerImpl.login(UserPasswordCredential("invalid username", TEST_VALID_PASSWORD))
 
@@ -80,7 +81,7 @@ class SessionControllerImplTest {
 
   @Test fun login_databaseError() {
     whenever(mockDatabase.getUserById(UserId("error")))
-        .thenReturn(DatabaseResult(error = "Some error", isDatabaseError = true))
+        .thenReturn(Result(null, Database.GetUserByIdStatus.DATABASE_ERROR))
 
     val result = sessionControllerImpl.login(UserPasswordCredential("error", "password"))
 

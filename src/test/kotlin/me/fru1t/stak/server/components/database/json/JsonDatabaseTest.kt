@@ -2,6 +2,10 @@ package me.fru1t.stak.server.components.database.json
 
 import com.google.common.truth.Truth.assertThat
 import com.google.gson.Gson
+import me.fru1t.stak.server.components.database.Database.GetUserByIdStatus
+import me.fru1t.stak.server.components.database.Database.CreateUserStatus
+import me.fru1t.stak.server.components.database.Database.DeleteUserStatus
+import me.fru1t.stak.server.components.database.Database.UpdateUserStatus
 import me.fru1t.stak.server.models.User
 import me.fru1t.stak.server.models.UserId
 import org.junit.jupiter.api.BeforeEach
@@ -58,7 +62,7 @@ class JsonDatabaseTest {
     val users = createUserTableMap(TEST_USER_1)
     writeToTestTable(TEST_USER_TABLE_PATH, GSON.toJson(users))
 
-    val result = jsonDatabase.getUserById(TEST_USER_1.userId).result!!
+    val result = jsonDatabase.getUserById(TEST_USER_1.userId).value
 
     assertThat(result).isEqualTo(TEST_USER_1)
   }
@@ -68,23 +72,18 @@ class JsonDatabaseTest {
 
     val result = jsonDatabase.getUserById(UserId("doesn't exist"))
 
-    assertThat(result.error).contains("not found")
-    assertThat(result.result).isNull()
-    assertThat(result.isDatabaseError).isFalse()
+    assertThat(result.value).isNull()
+    assertThat(result.status).isEqualTo(GetUserByIdStatus.USER_ID_NOT_FOUND)
   }
 
   @Test fun createUser() {
     val result1 = jsonDatabase.createUser(TEST_USER_1)
     val result2 = jsonDatabase.createUser(TEST_USER_2)
 
-    assertThat(result1.error).isNull()
+    assertThat(result1.status).isEqualTo(CreateUserStatus.SUCCESS)
+    assertThat(result2.status).isEqualTo(CreateUserStatus.SUCCESS)
     verifyFileContents(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1, TEST_USER_2)))
-    assertThat(result1.didSucceed).isTrue()
-    assertThat(result1.isDatabaseError).isFalse()
-    assertThat(result2.didSucceed).isTrue()
-    assertThat(result2.isDatabaseError).isFalse()
-    assertThat(result2.error).isNull()
   }
 
   @Test fun createUser_duplicateUser() {
@@ -94,11 +93,8 @@ class JsonDatabaseTest {
     jsonDatabase.createUser(TEST_USER_1)
     val result = jsonDatabase.createUser(user2)
 
-    assertThat(result.error).contains(user2.userId.username)
-    assertThat(result.error).contains("already exists")
+    assertThat(result.status).isEqualTo(CreateUserStatus.USER_ID_ALREADY_EXISTS)
     verifyFileContents(TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1)))
-    assertThat(result.didSucceed).isFalse()
-    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun deleteUser() {
@@ -107,10 +103,8 @@ class JsonDatabaseTest {
 
     val result = jsonDatabase.deleteUser(TEST_USER_1.userId)
 
-    assertThat(result.error).isNull()
+    assertThat(result.status).isEqualTo(DeleteUserStatus.SUCCESS)
     verifyFileContents(TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_2)))
-    assertThat(result.didSucceed).isTrue()
-    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun deleteUser_userDoesNotExist() {
@@ -118,11 +112,8 @@ class JsonDatabaseTest {
 
     val result = jsonDatabase.deleteUser(TEST_USER_2.userId)
 
-    assertThat(result.error).contains(TEST_USER_2.userId.username)
-    assertThat(result.error).contains("doesn't exist")
+    assertThat(result.status).isEqualTo(DeleteUserStatus.USER_ID_NOT_FOUND)
     verifyFileContents(TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1)))
-    assertThat(result.didSucceed).isFalse()
-    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun updateUser_noUsernameChange() {
@@ -132,11 +123,9 @@ class JsonDatabaseTest {
 
     val result = jsonDatabase.updateUser(TEST_USER_1.userId, modifiedUser)
 
-    assertThat(result.error).isNull()
+    assertThat(result.status).isEqualTo(UpdateUserStatus.SUCCESS)
     verifyFileContents(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(modifiedUser, TEST_USER_2)))
-    assertThat(result.didSucceed).isTrue()
-    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun updateUser_usernameChange() {
@@ -146,11 +135,9 @@ class JsonDatabaseTest {
 
     val result = jsonDatabase.updateUser(TEST_USER_1.userId, modifiedUser)
 
-    assertThat(result.error).isNull()
+    assertThat(result.status).isEqualTo(UpdateUserStatus.SUCCESS)
     verifyFileContents(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(modifiedUser, TEST_USER_2)))
-    assertThat(result.didSucceed).isTrue()
-    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun updateUser_noChange() {
@@ -160,11 +147,9 @@ class JsonDatabaseTest {
 
     val result = jsonDatabase.updateUser(TEST_USER_1.userId, modifiedUser)
 
-    assertThat(result.error).isNull()
+    assertThat(result.status).isEqualTo(UpdateUserStatus.SUCCESS)
     verifyFileContents(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(modifiedUser, TEST_USER_2)))
-    assertThat(result.didSucceed).isTrue()
-    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun updateUser_oldUserDoesNotExist() {
@@ -173,12 +158,9 @@ class JsonDatabaseTest {
 
     val result = jsonDatabase.updateUser(TEST_USER_2.userId, TEST_USER_1)
 
-    assertThat(result.error).contains(TEST_USER_2.userId.username)
-    assertThat(result.error).contains("doesn't exist")
+    assertThat(result.status).isEqualTo(UpdateUserStatus.USER_ID_NOT_FOUND)
     verifyFileContents(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1)))
-    assertThat(result.didSucceed).isFalse()
-    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun updateUser_usernameChange_duplicateUsername() {
@@ -188,12 +170,8 @@ class JsonDatabaseTest {
 
     val result = jsonDatabase.updateUser(TEST_USER_1.userId, modifiedUser)
 
-    assertThat(result.error).contains(TEST_USER_1.userId.username)
-    assertThat(result.error).contains(TEST_USER_2.userId.username)
-    assertThat(result.error).contains("already exists")
+    assertThat(result.status).isEqualTo(UpdateUserStatus.NEW_USER_ID_ALREADY_EXISTS)
     verifyFileContents(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1, TEST_USER_2)))
-    assertThat(result.didSucceed).isFalse()
-    assertThat(result.isDatabaseError).isFalse()
   }
 }
