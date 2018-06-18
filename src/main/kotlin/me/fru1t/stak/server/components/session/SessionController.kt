@@ -20,15 +20,15 @@ interface SessionController {
     DATABASE_ERROR,
 
     /**
-     * Returned when either the username or the password (or both) are incorrect for this login
+     * Returned when either the user id or the password (or both) are incorrect for this login
      * attempt. This status implies the database successfully queried and returned a result
-     * (including a result of length zero in the case if the username was incorrect). Provides no
+     * (including a result of length zero in the case if the user id was incorrect). Provides no
      * return value.
      */
     BAD_USERNAME_OR_PASSWORD,
 
     /**
-     * Both username and password matched a single user on file and as such, the caller should
+     * Both user id and password matched a single user on file and as such, the caller should
      * assume a valid log in sequence. At this point, a new session has been created for the
      * user, and the [login] method will return a valid [UserPrincipal].
      */

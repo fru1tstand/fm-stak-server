@@ -19,6 +19,7 @@ import me.fru1t.stak.server.ktor.testing.addBasicAuthorizationHeader
 import me.fru1t.stak.server.ktor.testing.handleFormRequest
 import me.fru1t.stak.server.ktor.testing.setBody
 import me.fru1t.stak.server.models.Result
+import me.fru1t.stak.server.models.UserId
 import me.fru1t.stak.server.models.UserPrincipal
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,7 +28,7 @@ import org.mockito.MockitoAnnotations
 
 class SessionHandlerTest {
   companion object {
-    private val TEST_VALID_USER_PRINCIPAL = UserPrincipal("username", "sometoken")
+    private val TEST_VALID_USER_PRINCIPAL = UserPrincipal(UserId("username"), "sometoken")
 
     /**
      * Asserts that a call has the given [status], [content], and [contentType], and that it's

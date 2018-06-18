@@ -4,7 +4,6 @@ import com.google.gson.Gson
 import com.google.gson.JsonParseException
 import com.google.gson.reflect.TypeToken
 import me.fru1t.stak.server.components.database.DatabaseOperationResult
-import me.fru1t.stak.server.components.database.DatabaseResult
 import mu.KLogging
 import java.io.IOException
 import java.nio.file.Files

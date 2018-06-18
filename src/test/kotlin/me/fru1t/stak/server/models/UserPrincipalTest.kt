@@ -5,9 +5,9 @@ import org.junit.jupiter.api.Test
 
 class UserPrincipalTest {
   @Test fun default() {
-    val result = UserPrincipal(username = "test username", token = "test token")
+    val result = UserPrincipal(UserId("test username"), "test token")
 
-    assertThat(result.username).isEqualTo("test username")
+    assertThat(result.userId).isEqualTo(UserId("test username"))
     assertThat(result.token).isEqualTo("test token")
   }
 }

@@ -8,6 +8,7 @@ import me.fru1t.stak.server.components.database.Database
 import me.fru1t.stak.server.components.security.Security
 import me.fru1t.stak.server.components.session.SessionController
 import me.fru1t.stak.server.models.Result
+import me.fru1t.stak.server.models.UserId
 import me.fru1t.stak.server.models.UserPrincipal
 import mu.KLogging
 import java.util.concurrent.TimeUnit
@@ -31,7 +32,7 @@ class SessionControllerImpl @Inject constructor(
 
   override fun login(userPasswordCredential: UserPasswordCredential)
       : Result<UserPrincipal?, SessionController.LoginStatus> {
-    val userResult = database.getUserByUsername(userPasswordCredential.name)
+    val userResult = database.getUserById(UserId(userPasswordCredential.name))
     if (userResult.error != null && userResult.isDatabaseError) {
       logger.error { "Database error: ${userResult.error}" }
       return Result(null, SessionController.LoginStatus.DATABASE_ERROR)
@@ -41,11 +42,11 @@ class SessionControllerImpl @Inject constructor(
       return Result(null, SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD)
     }
 
-    val userPrincipal = UserPrincipal(
-        username = userResult.result!!.username, token = security.generateRandomToken(TOKEN_LENGTH))
+    val userPrincipal =
+      UserPrincipal(userResult.result!!.userId, security.generateRandomToken(TOKEN_LENGTH))
     activeSessions.put(userPrincipal.token, userPrincipal)
     return Result(userPrincipal, SessionController.LoginStatus.SUCCESS)
-  }
+}
 
   override fun logout(token: String): Boolean {
     if (activeSessions.getIfPresent(token) != null) {

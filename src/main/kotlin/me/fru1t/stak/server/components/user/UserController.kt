@@ -15,7 +15,7 @@ interface UserController {
     SUCCESS,
 
     /**
-     * Failed to create user due to the [User.username] conflicting with an existing [User]. This
+     * Failed to create user due to the [User.userId] conflicting with an existing [User]. This
      * status implicitly states that a round-trip to the database completed successfully.
      */
     USERNAME_ALREADY_EXISTS,

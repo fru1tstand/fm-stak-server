@@ -23,6 +23,7 @@ import me.fru1t.stak.server.ktor.testing.handleJsonRequest
 import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.User
 import me.fru1t.stak.server.models.UserCreate
+import me.fru1t.stak.server.models.UserId
 import me.fru1t.stak.server.models.UserPrincipal
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -34,8 +35,8 @@ class UserHandlerTest {
     private val TEST_GSON = Gson()
     private const val TEST_USER_PATH = "/user"
 
-    private val TEST_USER = User("test username", "test hash", "test display name")
-    private val TEST_USER_PRINCIPAL = UserPrincipal(TEST_USER.username, "test token")
+    private val TEST_USER = User(UserId("test username"), "test hash", "test display name")
+    private val TEST_USER_PRINCIPAL = UserPrincipal(UserId(TEST_USER.userId.username), "test token")
     private val TEST_USER_CREATE =
       UserCreate("test create username", "test create password", "test create display name")
 

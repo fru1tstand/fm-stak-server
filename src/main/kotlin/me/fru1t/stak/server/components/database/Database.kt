@@ -1,21 +1,19 @@
 package me.fru1t.stak.server.components.database
 
 import me.fru1t.stak.server.models.User
+import me.fru1t.stak.server.models.UserId
 
 /** Defines database operations available. */
 interface Database {
-  /** Fetches a [User] by their [User.username]. */
-  fun getUserByUsername(username: String): DatabaseResult<User>
+  /** Fetches a [User] by their [userId]. */
+  fun getUserById(userId: UserId): DatabaseResult<User>
 
-  /** Creates a new [User] within the database if the [User.username] is unique. */
+  /** Creates a new [User] within the database if the [User.userId] is unique. */
   fun createUser(user: User): DatabaseOperationResult
 
   /** Deletes an existing [User] within the database if it exists. */
-  fun deleteUser(username: String): DatabaseOperationResult
+  fun deleteUser(userId: UserId): DatabaseOperationResult
 
-  /**
-   * Updates an existing [User] within the database if it exists, replacing [oldUser] with
-   * [newUser] by matching [oldUser]'s [User.username].
-   */
-  fun updateUser(oldUser: User, newUser: User): DatabaseOperationResult
+  /** Updates an existing user in a single transaction (including their user id if changed). */
+  fun updateUser(userId: UserId, updatedUser: User): DatabaseOperationResult
 }

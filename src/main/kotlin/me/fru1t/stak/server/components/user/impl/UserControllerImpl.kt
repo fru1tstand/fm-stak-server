@@ -7,6 +7,7 @@ import me.fru1t.stak.server.components.user.UserController.CreateUserStatus
 import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.User
 import me.fru1t.stak.server.models.UserCreate
+import me.fru1t.stak.server.models.UserId
 import javax.inject.Inject
 
 /** The default implementation of [UserController]. */
@@ -16,7 +17,7 @@ class UserControllerImpl @Inject constructor(
   override fun createUser(userCreate: UserCreate): Result<User?, CreateUserStatus> {
     val newUser =
       User(
-          username = userCreate.username,
+          userId = UserId(userCreate.username),
           passwordHash = security.hash(userCreate.password),
           displayName = userCreate.displayName)
 

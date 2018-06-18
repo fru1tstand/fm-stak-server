@@ -7,6 +7,7 @@ import me.fru1t.stak.server.components.database.Database
 import me.fru1t.stak.server.components.database.DatabaseOperationResult
 import me.fru1t.stak.server.components.database.DatabaseResult
 import me.fru1t.stak.server.models.User
+import me.fru1t.stak.server.models.UserId
 import mu.KLogging
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
@@ -32,53 +33,52 @@ class JsonDatabase @Inject constructor(
 
   private val userTable = getJsonTable(USER_TABLE_FILE, User::class)
 
-  override fun getUserByUsername(username: String): DatabaseResult<User> =
-    userTable.contents[username]
+  override fun getUserById(userId: UserId): DatabaseResult<User> =
+    userTable.contents[userId.username]
         ?.let { DatabaseResult(result = it) }
-        ?: DatabaseResult(error = "User $username not found.")
+        ?: DatabaseResult(error = "User userId not found.")
 
   override fun createUser(user: User): DatabaseOperationResult {
-    if (userTable.contents.containsKey(user.username)) {
-      return DatabaseOperationResult(error = "User ${user.username} already exists.")
+    if (userTable.contents.containsKey(user.userId.username)) {
+      return DatabaseOperationResult(error = "User ${user.userId.username} already exists.")
     }
 
-    userTable.contents[user.username] = user
+    userTable.contents[user.userId.username] = user
 
     return userTable.writeToDisk()
   }
 
-  override fun deleteUser(username: String): DatabaseOperationResult {
-    if (!userTable.contents.containsKey(username)) {
-      return DatabaseOperationResult(error = "User $username doesn't exist.")
+  override fun deleteUser(userId: UserId): DatabaseOperationResult {
+    if (!userTable.contents.containsKey(userId.username)) {
+      return DatabaseOperationResult(error = "User $userId doesn't exist.")
     }
 
-    userTable.contents.remove(username)
+    userTable.contents.remove(userId.username)
 
     return userTable.writeToDisk()
   }
 
-  override fun updateUser(oldUser: User, newUser: User): DatabaseOperationResult {
-    if (!userTable.contents.containsKey(oldUser.username)) {
-      return DatabaseOperationResult(error = "User ${oldUser.username} doesn't exist.")
-    }
+  override fun updateUser(userId: UserId, updatedUser: User): DatabaseOperationResult {
+    val oldUser = userTable.contents[userId.username]
+        ?: return DatabaseOperationResult(error = "User $userId doesn't exist.")
 
     // Don't do any operations if the user data is the same
-    if (oldUser == newUser) {
+    if (oldUser == updatedUser) {
       return DatabaseOperationResult(didSucceed = true)
     }
 
-    if (oldUser.username != newUser.username) {
-      // Username change, check that the new username doesn't already exist before adding
-      if (userTable.contents.containsKey(newUser.username)) {
+    if (userId != updatedUser.userId) {
+      // User id change, check that the new user id doesn't already exist before adding
+      if (userTable.contents.containsKey(updatedUser.userId.username)) {
         return DatabaseOperationResult(
-            error = "Can't change ${oldUser.username}'s username as the requested username " +
-                "${newUser.username} already exists.")
+            error = "Can't change ${oldUser.userId}'s user id as the requested user id " +
+                "${updatedUser.userId} already exists.")
       }
-      userTable.contents[newUser.username] = newUser
-      userTable.contents.remove(oldUser.username)
+      userTable.contents[updatedUser.userId.username] = updatedUser
+      userTable.contents.remove(oldUser.userId.username)
     } else {
       // Username didn't change, just do a replacement
-      userTable.contents.replace(newUser.username, newUser)
+      userTable.contents.replace(updatedUser.userId.username, updatedUser)
     }
 
     return userTable.writeToDisk()

@@ -39,7 +39,7 @@ class UserControllerImplTest {
     val result = userControllerImpl.createUser(TEST_USER_CREATE)
 
     assertThat(result.status).isEqualTo(CreateUserStatus.SUCCESS)
-    assertThat(result.value!!.username).isEqualTo(TEST_USER_CREATE.username)
+    assertThat(result.value!!.userId.username).isEqualTo(TEST_USER_CREATE.username)
     assertThat(result.value!!.passwordHash).isEqualTo(TEST_PASSWORD_HASH)
     assertThat(result.value!!.displayName).isEqualTo(TEST_USER_CREATE.displayName)
   }

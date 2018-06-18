@@ -3,6 +3,7 @@ package me.fru1t.stak.server.components.database.json
 import com.google.common.truth.Truth.assertThat
 import com.google.gson.Gson
 import me.fru1t.stak.server.models.User
+import me.fru1t.stak.server.models.UserId
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.BufferedReader
@@ -17,8 +18,8 @@ class JsonDatabaseTest {
 
     private val GSON = Gson()
     private val TEST_USER_TABLE_PATH = Paths.get(TEST_DATABASE_FOLDER, JsonDatabase.USER_TABLE_FILE)
-    private val TEST_USER_1 = User("TestUsername", "test hash", "a display name")
-    private val TEST_USER_2 = User("TestUsername2", "test hash2", "a display name2")
+    private val TEST_USER_1 = User(UserId("TestUsername"), "test hash", "a display name")
+    private val TEST_USER_2 = User(UserId("TestUsername2"), "test hash2", "a display name2")
 
     /** Writes [contents] into the [table] file. */
     private fun writeToTestTable(table: Path, contents: String) {
@@ -36,11 +37,11 @@ class JsonDatabaseTest {
     }
 
     /**
-     * Creates the equivalent data structure of a `JsonTable<User>` mapping a [User]'s username to
-     * their user info.
+     * Creates the equivalent data structure of a `JsonTable<User>` mapping a [User]'s user id to
+     * their data.
      */
     private fun createUserTableMap(vararg users: User): MutableMap<String, User> =
-      mutableMapOf(*users.map { Pair(it.username, it) }.toTypedArray())
+      mutableMapOf(*users.map { Pair(it.userId.username, it) }.toTypedArray())
   }
 
   private lateinit var jsonDatabase: JsonDatabase
@@ -57,7 +58,7 @@ class JsonDatabaseTest {
     val users = createUserTableMap(TEST_USER_1)
     writeToTestTable(TEST_USER_TABLE_PATH, GSON.toJson(users))
 
-    val result = jsonDatabase.getUserByUsername(TEST_USER_1.username).result!!
+    val result = jsonDatabase.getUserById(TEST_USER_1.userId).result!!
 
     assertThat(result).isEqualTo(TEST_USER_1)
   }
@@ -65,25 +66,25 @@ class JsonDatabaseTest {
   @Test fun getUserByUsername_notFound() {
     jsonDatabase = JsonDatabase(TEST_DATABASE_FOLDER + "does-not-exist", GSON)
 
-    val result = jsonDatabase.getUserByUsername("doesn't exist")
+    val result = jsonDatabase.getUserById(UserId("doesn't exist"))
 
+    assertThat(result.error).contains("not found")
     assertThat(result.result).isNull()
     assertThat(result.isDatabaseError).isFalse()
-    assertThat(result.error).contains("not found")
   }
 
   @Test fun createUser() {
     val result1 = jsonDatabase.createUser(TEST_USER_1)
     val result2 = jsonDatabase.createUser(TEST_USER_2)
 
+    assertThat(result1.error).isNull()
+    verifyFileContents(
+        TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1, TEST_USER_2)))
     assertThat(result1.didSucceed).isTrue()
     assertThat(result1.isDatabaseError).isFalse()
-    assertThat(result1.error).isNull()
     assertThat(result2.didSucceed).isTrue()
     assertThat(result2.isDatabaseError).isFalse()
     assertThat(result2.error).isNull()
-    verifyFileContents(
-        TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1, TEST_USER_2)))
   }
 
   @Test fun createUser_duplicateUser() {
@@ -93,35 +94,35 @@ class JsonDatabaseTest {
     jsonDatabase.createUser(TEST_USER_1)
     val result = jsonDatabase.createUser(user2)
 
-    assertThat(result.didSucceed).isFalse()
-    assertThat(result.error).contains(user2.username)
+    assertThat(result.error).contains(user2.userId.username)
     assertThat(result.error).contains("already exists")
-    assertThat(result.isDatabaseError).isFalse()
     verifyFileContents(TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1)))
+    assertThat(result.didSucceed).isFalse()
+    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun deleteUser() {
     writeToTestTable(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1, TEST_USER_2)))
 
-    val result = jsonDatabase.deleteUser(TEST_USER_1.username)
+    val result = jsonDatabase.deleteUser(TEST_USER_1.userId)
 
-    assertThat(result.didSucceed).isTrue()
     assertThat(result.error).isNull()
-    assertThat(result.isDatabaseError).isFalse()
     verifyFileContents(TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_2)))
+    assertThat(result.didSucceed).isTrue()
+    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun deleteUser_userDoesNotExist() {
     writeToTestTable(TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1)))
 
-    val result = jsonDatabase.deleteUser(TEST_USER_2.username)
+    val result = jsonDatabase.deleteUser(TEST_USER_2.userId)
 
-    assertThat(result.didSucceed).isFalse()
-    assertThat(result.error).contains(TEST_USER_2.username)
+    assertThat(result.error).contains(TEST_USER_2.userId.username)
     assertThat(result.error).contains("doesn't exist")
-    assertThat(result.isDatabaseError).isFalse()
     verifyFileContents(TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1)))
+    assertThat(result.didSucceed).isFalse()
+    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun updateUser_noUsernameChange() {
@@ -129,27 +130,27 @@ class JsonDatabaseTest {
     writeToTestTable(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1, TEST_USER_2)))
 
-    val result = jsonDatabase.updateUser(TEST_USER_1, modifiedUser)
+    val result = jsonDatabase.updateUser(TEST_USER_1.userId, modifiedUser)
 
-    assertThat(result.didSucceed).isTrue()
     assertThat(result.error).isNull()
-    assertThat(result.isDatabaseError).isFalse()
     verifyFileContents(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(modifiedUser, TEST_USER_2)))
+    assertThat(result.didSucceed).isTrue()
+    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun updateUser_usernameChange() {
-    val modifiedUser = TEST_USER_1.copy(username = "something else as a username")
+    val modifiedUser = TEST_USER_1.copy(userId = UserId("something else as a username"))
     writeToTestTable(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1, TEST_USER_2)))
 
-    val result = jsonDatabase.updateUser(TEST_USER_1, modifiedUser)
+    val result = jsonDatabase.updateUser(TEST_USER_1.userId, modifiedUser)
 
-    assertThat(result.didSucceed).isTrue()
     assertThat(result.error).isNull()
-    assertThat(result.isDatabaseError).isFalse()
     verifyFileContents(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(modifiedUser, TEST_USER_2)))
+    assertThat(result.didSucceed).isTrue()
+    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun updateUser_noChange() {
@@ -157,42 +158,42 @@ class JsonDatabaseTest {
     writeToTestTable(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1, TEST_USER_2)))
 
-    val result = jsonDatabase.updateUser(TEST_USER_1, modifiedUser)
+    val result = jsonDatabase.updateUser(TEST_USER_1.userId, modifiedUser)
 
-    assertThat(result.didSucceed).isTrue()
     assertThat(result.error).isNull()
-    assertThat(result.isDatabaseError).isFalse()
     verifyFileContents(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(modifiedUser, TEST_USER_2)))
+    assertThat(result.didSucceed).isTrue()
+    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun updateUser_oldUserDoesNotExist() {
     writeToTestTable(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1)))
 
-    val result = jsonDatabase.updateUser(TEST_USER_2, TEST_USER_1)
+    val result = jsonDatabase.updateUser(TEST_USER_2.userId, TEST_USER_1)
 
-    assertThat(result.didSucceed).isFalse()
-    assertThat(result.error).contains(TEST_USER_2.username)
+    assertThat(result.error).contains(TEST_USER_2.userId.username)
     assertThat(result.error).contains("doesn't exist")
-    assertThat(result.isDatabaseError).isFalse()
     verifyFileContents(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1)))
+    assertThat(result.didSucceed).isFalse()
+    assertThat(result.isDatabaseError).isFalse()
   }
 
   @Test fun updateUser_usernameChange_duplicateUsername() {
-    val modifiedUser = TEST_USER_1.copy(username = TEST_USER_2.username)
+    val modifiedUser = TEST_USER_1.copy(userId = TEST_USER_2.userId)
     writeToTestTable(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1, TEST_USER_2)))
 
-    val result = jsonDatabase.updateUser(TEST_USER_1, modifiedUser)
+    val result = jsonDatabase.updateUser(TEST_USER_1.userId, modifiedUser)
 
-    assertThat(result.didSucceed).isFalse()
-    assertThat(result.error).contains(TEST_USER_1.username)
-    assertThat(result.error).contains(TEST_USER_2.username)
+    assertThat(result.error).contains(TEST_USER_1.userId.username)
+    assertThat(result.error).contains(TEST_USER_2.userId.username)
     assertThat(result.error).contains("already exists")
-    assertThat(result.isDatabaseError).isFalse()
     verifyFileContents(
         TEST_USER_TABLE_PATH, GSON.toJson(createUserTableMap(TEST_USER_1, TEST_USER_2)))
+    assertThat(result.didSucceed).isFalse()
+    assertThat(result.isDatabaseError).isFalse()
   }
 }

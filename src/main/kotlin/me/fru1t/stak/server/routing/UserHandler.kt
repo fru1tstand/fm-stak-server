@@ -40,8 +40,8 @@ class UserHandler @Inject constructor(
    *   data was invalid. This might be caused due to bad client implementation, user error (or
    *   manipulation), or data corruption.
    * * [HttpStatusCode.Conflict] - The [User] couldn't be created because a [User] with the same
-   *   [User.username] already exists. A retry should not be attempted as it will be expected to
-   *   fail. The client should prompt the user to try with a different username.
+   *   [User.userId] already exists. A retry should not be attempted as it will be expected to
+   *   fail. The client should prompt the user to try with a different user id.
    * * [HttpStatusCode.InternalServerError] - The [User] couldn't be created because a database
    *   error occurred. The client may retry as this is a temporary failure.
    * * [HttpStatusCode.ResetContent] - The [User] was successfully created, but the session failed
