@@ -2,6 +2,8 @@ package me.fru1t.stak.server.components.session
 
 import io.ktor.auth.UserPasswordCredential
 import me.fru1t.stak.server.models.Result
+import me.fru1t.stak.server.models.Status
+import me.fru1t.stak.server.models.UserId
 import me.fru1t.stak.server.models.UserPrincipal
 
 /**
@@ -47,6 +49,22 @@ interface SessionController {
     SUCCESS
   }
 
+  /** Status states for [stopAllSessionsForUserId]. */
+  enum class StopAllSessionsForUserIdStatus {
+    /**
+     * No sessions were stopped because an error occurred when contacting the database. This could
+     * mean a temporary failure (ie. network failure) or a permanent failure (ie. implementation
+     * error).
+     */
+    DATABASE_ERROR,
+
+    /**
+     * All sessions with the [UserId] were stopped successfully. This could also mean no sessions
+     * were stopped if the [UserId] had no active sessions.
+     */
+    SUCCESS
+  }
+
   /**
    * Attempts to start a new session by validating a user's [userPasswordCredential]. On successful
    * validation, this method will generate and store a session token and return the [UserPrincipal]
@@ -65,4 +83,7 @@ interface SessionController {
    * an empty [Result] if no session at [token] was found. See [GetActiveSessionStatus].
    */
   fun getActiveSession(token: String): Result<UserPrincipal?, GetActiveSessionStatus>
+
+  /** Stops all sessions for a [userId]. See [StopAllSessionsForUserIdStatus]. */
+  fun stopAllSessionsForUserId(userId: UserId): Status<StopAllSessionsForUserIdStatus>
 }

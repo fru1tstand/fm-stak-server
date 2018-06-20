@@ -10,6 +10,7 @@ import me.fru1t.stak.server.components.security.Security
 import me.fru1t.stak.server.components.session.SessionController
 import me.fru1t.stak.server.components.session.SessionController.LoginStatus
 import me.fru1t.stak.server.models.Result
+import me.fru1t.stak.server.models.Status
 import me.fru1t.stak.server.models.UserId
 import me.fru1t.stak.server.models.UserPrincipal
 import mu.KLogging
@@ -27,10 +28,11 @@ class SessionControllerImpl @Inject constructor(
     private const val TOKEN_LENGTH = 128L
   }
 
-  private val activeSessions = CacheBuilder.newBuilder()
-      .ticker(cacheTicker)
-      .expireAfterAccess(sessionTimeoutHours, TimeUnit.HOURS)
-      .build<String, UserPrincipal>()
+  private val activeSessions =
+    CacheBuilder.newBuilder()
+        .ticker(cacheTicker)
+        .expireAfterAccess(sessionTimeoutHours, TimeUnit.HOURS)
+        .build<String, UserPrincipal>()
 
   override fun login(userPasswordCredential: UserPasswordCredential)
       : Result<UserPrincipal?, SessionController.LoginStatus> {
@@ -49,21 +51,40 @@ class SessionControllerImpl @Inject constructor(
 
     val userPrincipal =
       UserPrincipal(user!!.userId, security.generateRandomToken(TOKEN_LENGTH))
-    activeSessions.put(userPrincipal.token, userPrincipal)
+    synchronized(activeSessions) {
+      activeSessions.put(userPrincipal.token, userPrincipal)
+    }
     return Result(userPrincipal, SessionController.LoginStatus.SUCCESS)
 }
 
   override fun logout(token: String): Boolean {
-    if (activeSessions.getIfPresent(token) != null) {
-      activeSessions.invalidate(token)
-      return true
+    synchronized(activeSessions) {
+      if (activeSessions.getIfPresent(token) != null) {
+        activeSessions.invalidate(token)
+        return true
+      }
+      return false
     }
-    return false
   }
 
   override fun getActiveSession(token: String)
       : Result<UserPrincipal?, SessionController.GetActiveSessionStatus> =
-    activeSessions.getIfPresent(token)
-        ?.let { Result(it, SessionController.GetActiveSessionStatus.SUCCESS) }
-        ?: Result(null, SessionController.GetActiveSessionStatus.SESSION_NOT_FOUND)
+    synchronized(activeSessions) {
+      activeSessions.getIfPresent(token)
+          ?.let { Result(it, SessionController.GetActiveSessionStatus.SUCCESS) }
+          ?: Result(null, SessionController.GetActiveSessionStatus.SESSION_NOT_FOUND)
+    }
+
+  override fun stopAllSessionsForUserId(userId: UserId)
+      : Status<SessionController.StopAllSessionsForUserIdStatus> {
+    synchronized(activeSessions) {
+      activeSessions.asMap().forEach {
+        token, userPrincipal ->
+        if (userPrincipal.userId == userId) {
+          activeSessions.invalidate(token)
+        }
+      }
+    }
+    return Status(SessionController.StopAllSessionsForUserIdStatus.SUCCESS)
+  }
 }

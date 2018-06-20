@@ -40,10 +40,7 @@ class SessionControllerImplTest {
     whenever(mockDatabase.getUserById(TEST_VALID_USER_ID))
         .thenReturn(
             Result(
-                User(
-                    userId = TEST_VALID_USER_ID,
-                    passwordHash = testValidPasswordHash,
-                    displayName = "Test Name"),
+                User(TEST_VALID_USER_ID, testValidPasswordHash, "Test display Name"),
                 Database.GetUserByIdStatus.SUCCESS))
 
     sessionControllerImpl =
@@ -134,5 +131,45 @@ class SessionControllerImplTest {
     // Verify it doesn't exist
     assertThat(result.status).isEqualTo(SessionController.GetActiveSessionStatus.SESSION_NOT_FOUND)
     assertThat(result.value).isNull()
+  }
+
+  @Test fun stopAllSessionsForUserId() {
+    // Start multiple sessions
+    val activeSessions = listOf(
+        sessionControllerImpl.login(
+            UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD)),
+        sessionControllerImpl.login(
+            UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD)),
+        sessionControllerImpl.login(
+            UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD))
+    )
+
+    // Plus an extra one
+    val validSecondUserId = UserId("another username")
+    whenever(mockDatabase.getUserById(validSecondUserId))
+        .thenReturn(
+            Result(
+                User(validSecondUserId, testValidPasswordHash, "Test display Name"),
+                Database.GetUserByIdStatus.SUCCESS))
+    val secondActiveSession =
+      sessionControllerImpl.login(
+          UserPasswordCredential(validSecondUserId.username, TEST_VALID_PASSWORD))
+
+    // Stop all sessions for the given user
+    sessionControllerImpl.stopAllSessionsForUserId(TEST_VALID_USER_ID)
+
+    // Verify all sessions by TEST_VALID_USER_ID have been stopped
+    for (activeSession in activeSessions) {
+      val getActiveSessionResult =
+        sessionControllerImpl.getActiveSession(activeSession.value!!.token)
+      assertThat(getActiveSessionResult.status)
+          .isEqualTo(SessionController.GetActiveSessionStatus.SESSION_NOT_FOUND)
+    }
+
+    // Verify that the active sessions by other users still exist
+    val getActiveSecondSession =
+        sessionControllerImpl.getActiveSession(secondActiveSession.value!!.token)
+    assertThat(getActiveSecondSession.status)
+        .isEqualTo(SessionController.GetActiveSessionStatus.SUCCESS)
   }
 }
