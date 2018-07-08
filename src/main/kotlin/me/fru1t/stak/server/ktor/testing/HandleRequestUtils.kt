@@ -23,6 +23,7 @@ private object Constants {
   const val HEADER_AUTHORIZATION = "Authorization"
   const val AUTHORIZATION_CREDENTIALS_FORMAT = "%s:%s"
   const val AUTHORIZATION_BASIC_FORMAT = "Basic %s"
+  const val AUTHORIZATION_BEARER_FORMAT = "Bearer %s"
 
   /* Content-type header constants. */
   const val HEADER_CONTENT_TYPE = "content-type"
@@ -72,6 +73,12 @@ fun TestApplicationRequest.addBasicAuthorizationHeader(username: String, passwor
   addHeader(
       Constants.HEADER_AUTHORIZATION,
       Constants.AUTHORIZATION_BASIC_FORMAT.format(base64EncodedCredentials))
+}
+
+/** Adds the Bearer authorization header to this request given the bearer [token]. */
+@TestOnly
+fun TestApplicationRequest.addBearerAuthorizationHeader(token: String) {
+  addHeader(Constants.HEADER_AUTHORIZATION, Constants.AUTHORIZATION_BEARER_FORMAT.format(token))
 }
 
 /**

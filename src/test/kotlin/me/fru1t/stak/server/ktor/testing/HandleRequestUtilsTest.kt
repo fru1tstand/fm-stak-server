@@ -54,6 +54,17 @@ class HandleRequestUtilsTest {
     assertThat(result.request.headers["Authorization"]).isEqualTo(authorizationString)
   }
 
+  @Test fun addBearerAuthorizationHeader() = withTestApplication {
+    val token = "test-token"
+    val expectedAuthorizationString = "Bearer $token"
+
+    val result = handleRequest {
+      addBearerAuthorizationHeader(token)
+    }
+
+    assertThat(result.request.headers["Authorization"]).isEqualTo(expectedAuthorizationString)
+  }
+
   @Test fun setBody() = withTestApplication {
     val request = handleRequest(HttpMethod.Post, "/") {
       setBody {

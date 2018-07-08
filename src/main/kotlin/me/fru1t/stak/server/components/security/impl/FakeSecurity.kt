@@ -13,13 +13,13 @@ import kotlin.streams.asSequence
 class FakeSecurity @TestOnly constructor() : Security {
   companion object {
     private const val TOKEN_CHARACTERS =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+=-[],.<>/?';:"
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   }
 
   override fun hash(string: String): String {
     val md = MessageDigest.getInstance("SHA-256")
     val digest = md.digest(string.toByteArray(Charsets.UTF_8))
-    return digest.fold("", { str, it -> str + "%02x".format(it) })
+    return digest.fold("") { str, it -> str + "%02x".format(it) }
   }
 
   override fun equals(string: String, hash: String?): Boolean = hash(string) == hash
