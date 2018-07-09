@@ -8,7 +8,6 @@ import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
 import io.ktor.server.testing.withTestApplication
 import org.junit.jupiter.api.Test
-import java.util.Base64
 
 class HandleRequestUtilsTest {
   /** A basic data class for testing. */
@@ -37,21 +36,6 @@ class HandleRequestUtilsTest {
     assertThat(result.getBody()).isEqualTo(gson.toJson(data))
     assertThat(result.request.method).isEqualTo(httpMethod)
     assertThat(result.request.contentType().toString()).contains("application/json")
-  }
-
-  @Test fun addBasicAuthorizationHeader() = withTestApplication {
-    val username = "username"
-    val password = "password"
-    val authorizationString =
-      "Basic " +
-          Base64.getEncoder().encode("$username:$password".toByteArray(Charsets.UTF_8))
-              .toString(Charsets.UTF_8)
-
-    val result = handleRequest {
-      addBasicAuthorizationHeader(username, password)
-    }
-
-    assertThat(result.request.headers["Authorization"]).isEqualTo(authorizationString)
   }
 
   @Test fun addBearerAuthorizationHeader() = withTestApplication {

@@ -1,5 +1,6 @@
 package me.fru1t.stak.server.ktor.auth
 
+import io.ktor.application.ApplicationCall
 import io.ktor.application.call
 import io.ktor.auth.Authentication
 import io.ktor.auth.AuthenticationFailedCause
@@ -17,14 +18,14 @@ import me.fru1t.stak.server.ktor.respondEmpty
  * @param name is the name of the provider, or `null` for a default provider.
  */
 class BearerAuthenticationProvider(name: String?) : AuthenticationProvider(name) {
-  internal var authenticationFunction: suspend (String) -> Principal? = { null }
+  internal var authenticationFunction: suspend ApplicationCall.(String) -> Principal? = { null }
 
   /**
    * Sets a validation function that will check given [String] which represents the Bearer token,
    * and return a [Principal] or `null` if the token does not correspond to an authenticated
    * principal.
    */
-  fun validate(body: suspend (String) -> Principal?) {
+  fun validate(body: suspend ApplicationCall.(String) -> Principal?) {
     authenticationFunction = body
   }
 }
@@ -42,7 +43,7 @@ fun Authentication.Configuration.bearer(
   provider.pipeline.intercept(AuthenticationPipeline.RequestAuthentication) { context ->
     // Store principal if authenticate function produces the principal if the bearer token exists
     val bearerCredentials = call.request.bearerAuthenticationCredentials()
-    val sessionPrincipal = bearerCredentials?.let { authenticate(it) }
+    val sessionPrincipal = bearerCredentials?.let { authenticate(call, it) }
     if (sessionPrincipal != null) {
       context.principal(sessionPrincipal)
     } else {

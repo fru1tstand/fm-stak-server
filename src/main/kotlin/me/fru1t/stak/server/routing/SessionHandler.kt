@@ -1,6 +1,5 @@
 package me.fru1t.stak.server.routing
 
-import com.google.common.annotations.VisibleForTesting
 import io.ktor.application.ApplicationCall
 import io.ktor.application.call
 import io.ktor.auth.Authentication
@@ -8,7 +7,6 @@ import io.ktor.auth.FormAuthChallenge
 import io.ktor.auth.Principal
 import io.ktor.auth.authenticate
 import io.ktor.auth.authentication
-import io.ktor.auth.basic
 import io.ktor.auth.form
 import io.ktor.features.origin
 import io.ktor.http.ContentType
@@ -20,6 +18,8 @@ import io.ktor.routing.post
 import io.ktor.routing.route
 import me.fru1t.stak.server.Constants
 import me.fru1t.stak.server.components.session.SessionController
+import me.fru1t.stak.server.ktor.auth.bearer
+import me.fru1t.stak.server.ktor.respondEmpty
 import me.fru1t.stak.server.models.UserPrincipal
 import mu.KLogging
 import javax.inject.Inject
@@ -38,36 +38,25 @@ fun Route.session(sessionHandler: SessionHandler) {
 
 /** Handles session routing including logging in, logging out, and persistent session data. */
 class SessionHandler @Inject constructor(private val sessionController: SessionController) {
-  companion object : KLogging() {
-    private const val REALM = "stak-user"
+  private companion object : KLogging()
 
-    private const val SESSION_AUTH_NAME = Constants.SESSION_AUTH_NAME
-    @VisibleForTesting internal const val SESSION_USER_PARAM_NAME = "type"
-    @VisibleForTesting internal const val SESSION_PASS_PARAM_NAME = "token"
-    @VisibleForTesting internal const val SESSION_USER_PARAM_VALUE = "session-token"
-  }
-
+  /**
+   * Sets up a login and bearer authentication routes with [Constants.LOGIN_AUTH_NAME] and
+   * [Constants.SESSION_AUTH_NAME], respectively.
+   */
   fun registerAuthentication(configuration: Authentication.Configuration) {
-    configuration.basic(Constants.LOGIN_AUTH_NAME) {
-      realm = REALM
+    configuration.form(Constants.LOGIN_AUTH_NAME) {
+      userParamName = Constants.LOGIN_USER_PARAM_NAME
+      passwordParamName = Constants.LOGIN_PASS_PARAM_NAME
+      challenge = FormAuthChallenge.Unauthorized
       validate { credentials -> sessionController.login(credentials).value }
     }
-    configuration.form(SESSION_AUTH_NAME) {
-      userParamName = SESSION_USER_PARAM_NAME
-      passwordParamName = SESSION_PASS_PARAM_NAME
-      challenge = FormAuthChallenge.Unauthorized
-      validate { userPasswordCredential ->
+    configuration.bearer(Constants.SESSION_AUTH_NAME) {
+      validate { token ->
         run<Principal?> {
-          if (userPasswordCredential.name != SESSION_USER_PARAM_VALUE) {
-            return@run null
-          }
-
-          val result = sessionController.getActiveSession(userPasswordCredential.password)
+          val result = sessionController.getActiveSession(token)
           if (result.status != SessionController.GetActiveSessionStatus.SUCCESS) {
-            logger.debug {
-              "Session validation failed for host ${request.origin.host}, gave " +
-                  userPasswordCredential.password
-            }
+            logger.debug { "Invalid session token for host ${request.origin.host}, game: $token" }
             return@run null
           }
 
@@ -101,7 +90,6 @@ class SessionHandler @Inject constructor(private val sessionController: SessionC
    */
   suspend fun logout(call: ApplicationCall) {
     sessionController.logout(call.authentication.principal<UserPrincipal>()!!.token)
-    call.respondText(
-        text = "", contentType = ContentType.Text.Plain, status = HttpStatusCode.OK)
+    call.respondEmpty(HttpStatusCode.OK)
   }
 }

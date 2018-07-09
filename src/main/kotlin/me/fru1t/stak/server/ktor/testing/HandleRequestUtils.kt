@@ -12,7 +12,6 @@ import kotlinx.coroutines.experimental.io.jvm.javaio.toInputStream
 import org.jetbrains.annotations.TestOnly
 import java.io.InputStreamReader
 import java.net.URLEncoder
-import java.util.Base64
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.isAccessible
@@ -21,8 +20,6 @@ import kotlin.reflect.jvm.isAccessible
 private object Constants {
   /* Authorization header constants. */
   const val HEADER_AUTHORIZATION = "Authorization"
-  const val AUTHORIZATION_CREDENTIALS_FORMAT = "%s:%s"
-  const val AUTHORIZATION_BASIC_FORMAT = "Basic %s"
   const val AUTHORIZATION_BEARER_FORMAT = "Bearer %s"
 
   /* Content-type header constants. */
@@ -59,20 +56,6 @@ fun TestApplicationEngine.handleJsonRequest(
   addHeader(Constants.HEADER_CONTENT_TYPE, Constants.CONTENT_TYPE_JSON)
   setBody(gson.toJson(data))
   setup()
-}
-
-/** Adds the basic authorization header to this request given a [username] and [password]. */
-@TestOnly
-fun TestApplicationRequest.addBasicAuthorizationHeader(username: String, password: String) {
-  val base64EncodedCredentials =
-    Base64.getEncoder().encode(
-        Constants.AUTHORIZATION_CREDENTIALS_FORMAT
-            .format(username, password)
-            .toByteArray(Charsets.UTF_8))
-        ?.toString(Charsets.UTF_8)
-  addHeader(
-      Constants.HEADER_AUTHORIZATION,
-      Constants.AUTHORIZATION_BASIC_FORMAT.format(base64EncodedCredentials))
 }
 
 /** Adds the Bearer authorization header to this request given the bearer [token]. */

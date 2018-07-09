@@ -13,7 +13,7 @@ class SecurityImpl @Inject constructor() : Security {
     private val DUMMY_PASSWORD_HASH = BCrypt.hashpw("", BCrypt.gensalt(BCRYPT_ROUNDS))
 
     private const val TOKEN_CHARACTERS =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+=-[],.<>/?';:"
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   }
 
   override fun hash(string: String): String = BCrypt.hashpw(string, BCrypt.gensalt(BCRYPT_ROUNDS))
