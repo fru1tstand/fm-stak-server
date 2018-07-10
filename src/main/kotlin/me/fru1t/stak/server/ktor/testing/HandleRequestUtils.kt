@@ -37,7 +37,7 @@ private object Constants {
  * the request body. This is required to use [TestApplicationRequest.setBody].
  */
 @TestOnly
-fun TestApplicationEngine.handleFormRequest(
+internal fun TestApplicationEngine.handleFormRequest(
     method: HttpMethod,
     uri: String,
     setup: TestApplicationRequest.() -> Unit) = handleRequest(method, uri) {
@@ -52,7 +52,7 @@ fun TestApplicationEngine.handleFormRequest(
  * [installFakeJsonContentNegotiation].
  */
 @TestOnly
-fun TestApplicationEngine.handleJsonRequest(
+internal fun TestApplicationEngine.handleJsonRequest(
     data: Any,
     gson: Gson,
     method: HttpMethod,
@@ -68,13 +68,13 @@ fun TestApplicationEngine.handleJsonRequest(
  * serialized json from within requests.
  */
 @TestOnly
-fun TestApplicationEngine.installFakeJsonContentNegotiation() {
+internal fun TestApplicationEngine.installFakeJsonContentNegotiation() {
   application.install(ContentNegotiation) { gson { setPrettyPrinting() } }
 }
 
 /** Adds the Bearer authorization header to this request given the bearer [token]. */
 @TestOnly
-fun TestApplicationRequest.addBearerAuthorizationHeader(token: String) {
+internal fun TestApplicationRequest.addBearerAuthorizationHeader(token: String) {
   addHeader(Constants.HEADER_AUTHORIZATION, Constants.AUTHORIZATION_BEARER_FORMAT.format(token))
 }
 
@@ -84,7 +84,7 @@ fun TestApplicationRequest.addBearerAuthorizationHeader(token: String) {
  * [TestApplicationEngine.handleFormRequest].
  */
 @TestOnly
-fun TestApplicationRequest.setBody(builder: RequestBodyBuilder.() -> Unit) {
+internal fun TestApplicationRequest.setBody(builder: RequestBodyBuilder.() -> Unit) {
   val bodyBuilder = RequestBodyBuilder()
   builder(bodyBuilder)
   setBody(bodyBuilder.build())
@@ -92,11 +92,11 @@ fun TestApplicationRequest.setBody(builder: RequestBodyBuilder.() -> Unit) {
 
 /** Retrieves the body of this [TestApplicationCall]. */
 @TestOnly
-fun TestApplicationCall.getBody() : String =
+internal fun TestApplicationCall.getBody() : String =
   CharStreams.toString(InputStreamReader(request.bodyChannel.toInputStream(), Charsets.UTF_8))
 
 /** Handles building the content of a request body. */
-class RequestBodyBuilder @TestOnly internal constructor() {
+internal class RequestBodyBuilder @TestOnly constructor() {
   companion object {
     private const val PARAMETER_FORMAT = "%s=%s"
 

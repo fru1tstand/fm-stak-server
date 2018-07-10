@@ -10,7 +10,7 @@ import kotlin.streams.asSequence
  * A fake implementation of [Security] used for testing. Methods within are backed by a SHA-256
  * hash.
  */
-class FakeSecurity @TestOnly constructor() : Security {
+internal class FakeSecurity @TestOnly constructor() : Security {
   companion object {
     private const val TOKEN_CHARACTERS =
       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
