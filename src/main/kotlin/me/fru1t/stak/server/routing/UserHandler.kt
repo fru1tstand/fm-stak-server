@@ -2,12 +2,16 @@ package me.fru1t.stak.server.routing
 
 import io.ktor.application.ApplicationCall
 import io.ktor.auth.UserPasswordCredential
+import io.ktor.auth.authenticate
+import io.ktor.auth.authentication
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.response.respondText
 import io.ktor.routing.Route
+import io.ktor.routing.delete
 import io.ktor.routing.post
 import io.ktor.routing.route
+import me.fru1t.stak.server.Constants
 import me.fru1t.stak.server.components.session.SessionController
 import me.fru1t.stak.server.components.session.SessionController.LoginStatus
 import me.fru1t.stak.server.components.user.UserController
@@ -16,13 +20,20 @@ import me.fru1t.stak.server.ktor.receiveOrBadRequest
 import me.fru1t.stak.server.ktor.respondEmpty
 import me.fru1t.stak.server.models.User
 import me.fru1t.stak.server.models.UserCreate
+import me.fru1t.stak.server.models.UserPrincipal
 import mu.KLogging
 import javax.inject.Inject
 
 /** User routing. */
 fun Route.user(userHandler: UserHandler) {
   route("user") {
+    // Root `/user` handles
     post { userHandler.createUser(context) }
+
+    authenticate(Constants.SESSION_AUTH_NAME) {
+      // Special case `/user/me` handles
+      delete("me") { userHandler.deleteMe(context) }
+    }
   }
 }
 
@@ -85,5 +96,35 @@ class UserHandler @Inject constructor(
       LoginStatus.BAD_USERNAME_OR_PASSWORD ->
         call.respondEmpty(HttpStatusCode.ResetContent)
     }
+  }
+
+  /**
+   * Routing call for deleting the currently logged in user. Note that this call doesn't delete the
+   * data associated to the user (ie. tasks, attributes, etc). The following
+   * [HttpStatusCodes][HttpStatusCode] can be returned:
+   *
+   * * [HttpStatusCode.NoContent] - The logged in [User] was deleted successfully. The client should
+   *   refresh with no token as all sessions for the deleted [User] have been terminated.
+   * * [HttpStatusCode.NotFound] - The logged in [User] was already deleted. The client should
+   *   refresh with no token as all sessions for the deleted [User] have been terminated.
+   * * [HttpStatusCode.InternalServerError] - An internal database error occurred. This could be
+   *   temporary (ie. network error) or permanent (ie. implementation bug).
+   */
+  suspend fun deleteMe(call: ApplicationCall) {
+    val deleteUserStatus =
+      userController.deleteUser(call.authentication.principal<UserPrincipal>()!!.userId)
+
+    val response = when (deleteUserStatus.status) {
+      UserController.DeleteUserStatus.SUCCESS ->
+        HttpStatusCode.NoContent
+
+      UserController.DeleteUserStatus.USER_ID_NOT_FOUND ->
+        HttpStatusCode.NotFound
+
+      UserController.DeleteUserStatus.DATABASE_ERROR,
+      UserController.DeleteUserStatus.DATABASE_ERROR_ON_SESSION_DELETE ->
+        HttpStatusCode.InternalServerError
+    }
+    call.respondEmpty(response)
   }
 }

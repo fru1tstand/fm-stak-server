@@ -2,6 +2,9 @@ package me.fru1t.stak.server.ktor.testing
 
 import com.google.common.io.CharStreams
 import com.google.gson.Gson
+import io.ktor.application.install
+import io.ktor.features.ContentNegotiation
+import io.ktor.gson.gson
 import io.ktor.http.HttpMethod
 import io.ktor.server.testing.TestApplicationCall
 import io.ktor.server.testing.TestApplicationEngine
@@ -44,7 +47,9 @@ fun TestApplicationEngine.handleFormRequest(
 
 /**
  * Performs a [handleRequest] call setting the `content-type` header to `application/json` and
- * encoding the given [data] as JSON in the request body.
+ * encoding the given [data] as JSON in the request body. Note: one must install a json
+ * [ContentNegotiation] scheme before tests will work with this method. See
+ * [installFakeJsonContentNegotiation].
  */
 @TestOnly
 fun TestApplicationEngine.handleJsonRequest(
@@ -56,6 +61,15 @@ fun TestApplicationEngine.handleJsonRequest(
   addHeader(Constants.HEADER_CONTENT_TYPE, Constants.CONTENT_TYPE_JSON)
   setBody(gson.toJson(data))
   setup()
+}
+
+/**
+ * Sets up a Json [ContentNegotiation] scheme using [Gson]. This is required in order to process
+ * serialized json from within requests.
+ */
+@TestOnly
+fun TestApplicationEngine.installFakeJsonContentNegotiation() {
+  application.install(ContentNegotiation) { gson { setPrettyPrinting() } }
 }
 
 /** Adds the Bearer authorization header to this request given the bearer [token]. */

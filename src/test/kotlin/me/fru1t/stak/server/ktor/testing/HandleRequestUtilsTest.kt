@@ -2,11 +2,17 @@ package me.fru1t.stak.server.ktor.testing
 
 import com.google.common.truth.Truth.assertThat
 import com.google.gson.Gson
+import io.ktor.application.call
 import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import io.ktor.request.contentType
+import io.ktor.request.receiveOrNull
+import io.ktor.routing.post
+import io.ktor.routing.routing
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
 import io.ktor.server.testing.withTestApplication
+import me.fru1t.stak.server.ktor.respondEmpty
 import org.junit.jupiter.api.Test
 
 class HandleRequestUtilsTest {
@@ -31,11 +37,38 @@ class HandleRequestUtilsTest {
     val gson = Gson()
     val data = TestClass("example param 1", 300)
 
-    val result = handleJsonRequest(data, gson, httpMethod, uri) {}
+    val result = this.handleJsonRequest(data, gson, httpMethod, uri) {}
 
     assertThat(result.getBody()).isEqualTo(gson.toJson(data))
     assertThat(result.request.method).isEqualTo(httpMethod)
     assertThat(result.request.contentType().toString()).contains("application/json")
+  }
+
+  @Test fun installFakeJsonContentNegotiation() = withTestApplication {
+    val testData = TestClass("test string", 1234)
+    this.installFakeJsonContentNegotiation()
+    application.routing {
+      post("test") {
+        // Utilizes the content negotiation
+        val receivedData = call.receiveOrNull(TestClass::class)
+
+        if (receivedData == null) {
+          call.respondEmpty(HttpStatusCode.BadRequest)
+          return@post
+        }
+
+        assertThat(receivedData).isEqualTo(testData)
+        call.respondEmpty(HttpStatusCode.OK)
+      }
+    }
+
+    val request = handleRequest(HttpMethod.Post, "/test") {
+      addHeader("content-type", "application/json")
+      setBody(Gson().toJson(testData))
+    }
+
+    assertThat(request.response.status()).isEqualTo(HttpStatusCode.OK)
+    assertThat(request.requestHandled).isTrue()
   }
 
   @Test fun addBearerAuthorizationHeader() = withTestApplication {

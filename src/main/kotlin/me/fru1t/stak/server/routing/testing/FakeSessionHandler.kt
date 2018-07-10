@@ -27,8 +27,7 @@ internal class FakeSessionHandler @TestOnly constructor() {
    */
   fun addActiveSession(user: User): UserPrincipal {
     val resultUserPrincipal =
-      UserPrincipal(user.userId, fakeSecurity.generateRandomToken(
-          TOKEN_LENGTH))
+      UserPrincipal(user.userId, fakeSecurity.generateRandomToken(TOKEN_LENGTH))
     activeSessions[resultUserPrincipal.token] = resultUserPrincipal
     return resultUserPrincipal
   }
