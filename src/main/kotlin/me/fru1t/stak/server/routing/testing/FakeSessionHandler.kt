@@ -4,7 +4,7 @@ import io.ktor.application.install
 import io.ktor.auth.Authentication
 import io.ktor.server.testing.TestApplicationEngine
 import me.fru1t.stak.server.Constants
-import me.fru1t.stak.server.components.security.impl.FakeSecurity
+import me.fru1t.stak.server.components.security.testing.FakeSecurity
 import me.fru1t.stak.server.ktor.auth.bearer
 import me.fru1t.stak.server.models.User
 import me.fru1t.stak.server.models.UserPrincipal

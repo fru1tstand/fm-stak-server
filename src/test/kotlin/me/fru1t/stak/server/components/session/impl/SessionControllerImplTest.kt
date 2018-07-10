@@ -5,7 +5,7 @@ import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.whenever
 import io.ktor.auth.UserPasswordCredential
 import me.fru1t.stak.server.components.database.Database
-import me.fru1t.stak.server.components.security.impl.FakeSecurity
+import me.fru1t.stak.server.components.security.testing.FakeSecurity
 import me.fru1t.stak.server.components.session.SessionController
 import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.User

@@ -1,4 +1,4 @@
-package me.fru1t.stak.server.components.security.impl
+package me.fru1t.stak.server.components.security.testing
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -17,7 +17,8 @@ class FakeSecurityTest {
   }
 
   @Test fun hash() {
-    assertThat(fakeSecurity.hash(TEST_STRING)).isEqualTo(fakeSecurity.hash(TEST_STRING))
+    assertThat(fakeSecurity.hash(TEST_STRING)).isEqualTo(fakeSecurity.hash(
+        TEST_STRING))
   }
 
   @Test fun equals() {

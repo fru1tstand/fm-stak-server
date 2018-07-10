@@ -1,4 +1,4 @@
-package me.fru1t.stak.server.components.security.impl
+package me.fru1t.stak.server.components.security.testing
 
 import me.fru1t.stak.server.components.security.Security
 import org.jetbrains.annotations.TestOnly
@@ -7,8 +7,8 @@ import java.util.Random
 import kotlin.streams.asSequence
 
 /**
- * A fake implementation of [Security] used for testing. Methods within are backed by a weak SHA-256
- * implementation.
+ * A fake implementation of [Security] used for testing. Methods within are backed by a SHA-256
+ * hash.
  */
 class FakeSecurity @TestOnly constructor() : Security {
   companion object {
