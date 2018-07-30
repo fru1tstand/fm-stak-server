@@ -7,10 +7,11 @@ portable mode for individual offline use. The server side is a simple REST api t
 data. The client side deals purely with graphical rendering and controls for Stak. It will forward
 all data requests to the server.
 
-###### Dependencies
-+ **Dagger** dependency injection
-+ **ktor** kotlin web server
-
 ## Development
-Please see the [dev/README.md](https://github.com/fru1tstand/fm-stak/blob/master/dev/README.md) in
-the stak desktop client repo.
+Interested in contributing? See the
+[Stak Developers Guide](https://docs.google.com/document/d/1obnMfmok-DIGankcRYoF4AbZy6SKWkGUzn1swchOd0s)
+on google drive.
+
+Also take a look at the
+[global documentation list](https://docs.google.com/spreadsheets/d/1KuNAc5Nso1Q7_Q1goK0vh4dg5MWvP81zz_jmq6fZU8I)
+for a reference to every feature in existence for Stak.
