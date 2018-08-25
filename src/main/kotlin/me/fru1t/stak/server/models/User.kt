@@ -29,3 +29,15 @@ data class UserCreate(
     val username: String,
     val password: String,
     val displayName: String)
+
+/**
+ * Represents the change delta that should be applied to a [User]. `null` fields mean no changes
+ * to the corresponding field within [User].
+ */
+data class UserModify(
+    val username: String? = null,
+    val password: String? = null,
+    val displayName: String? = null) {
+  /** Returns `true` if all fields are null; otherwise, `false`. */
+  fun isEmpty(): Boolean = username == null && password == null && displayName == null
+}
