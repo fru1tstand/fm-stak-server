@@ -6,6 +6,7 @@ import me.fru1t.stak.server.models.Status
 import me.fru1t.stak.server.models.User
 import me.fru1t.stak.server.models.UserCreate
 import me.fru1t.stak.server.models.UserId
+import me.fru1t.stak.server.models.UserModify
 
 /** Handles manipulation of [User]s like creation, modification, and deletion. */
 interface UserController {
@@ -58,6 +59,29 @@ interface UserController {
     DATABASE_ERROR_ON_SESSION_DELETE
   }
 
+  enum class ModifyUserStatus {
+    /** The [User] was successfully modified and the new [User] with updated values is returned. */
+    SUCCESS,
+
+    /**
+     * The [User] to modify wasn't found within the database, and thus no changes have been made.
+     * This implies a round trip was successfully completed to the database.
+     */
+    USER_ID_NOT_FOUND,
+
+    /**
+     * The [User] was not modified due to a database error. This could represent a temporary failure
+     * (ie. network timeout) or a permanent error (ie. implementation bug).
+     */
+    DATABASE_ERROR,
+
+    /**
+     * The [User] could not be updated as the [UserModify.username] already exists and cannot be
+     * applied to the specified user.
+     */
+    NEW_USER_ID_ALREADY_EXISTS
+  }
+
   /**
    * Attempts to create a new user from [userCreate]. Returns the resulting [User] on
    * [CreateUserStatus.SUCCESS], otherwise `null`.
@@ -66,4 +90,12 @@ interface UserController {
 
   /** Deletes the [User] with the given [userId]. See [DeleteUserStatus]. */
   fun deleteUser(userId: UserId): Status<DeleteUserStatus>
+
+  /**
+   * Modifies the [User] with the [User.userId] [userId] with the [delta] Note that `null` entries
+   * within the [delta] are treated as "no change" (ie. they're ignored). If all fields within
+   * the [delta] are `null`, this is a no-op. This method is all-or-nothing, meaning if any change
+   * was not applied successfully, no changes will be.
+   */
+  fun modifyUser(userId: UserId, delta: UserModify): Result<User?, ModifyUserStatus>
 }
