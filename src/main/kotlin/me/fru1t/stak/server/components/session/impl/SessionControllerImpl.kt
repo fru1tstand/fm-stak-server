@@ -15,6 +15,7 @@ import me.fru1t.stak.server.models.UserId
 import me.fru1t.stak.server.models.UserPrincipal
 import mu.KLogging
 import java.util.concurrent.TimeUnit
+import javax.annotation.concurrent.GuardedBy
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -28,6 +29,7 @@ class SessionControllerImpl @Inject constructor(
     private const val TOKEN_LENGTH = 128L
   }
 
+  @GuardedBy("activeSessions")
   private val activeSessions =
     CacheBuilder.newBuilder()
         .ticker(cacheTicker)
@@ -86,5 +88,15 @@ class SessionControllerImpl @Inject constructor(
       }
     }
     return Status(SessionController.StopAllSessionsForUserIdStatus.SUCCESS)
+  }
+
+  override fun replaceSession(token: String, newUserId: UserId)
+      : Status<SessionController.ReplaceSessionStatus> {
+    synchronized(activeSessions) {
+      activeSessions.getIfPresent(token)
+        ?: return Status(SessionController.ReplaceSessionStatus.TOKEN_NOT_FOUND)
+      activeSessions.put(token, UserPrincipal(newUserId, token))
+    }
+    return Status(SessionController.ReplaceSessionStatus.SUCCESS)
   }
 }

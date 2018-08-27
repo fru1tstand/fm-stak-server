@@ -60,7 +60,28 @@ interface SessionController {
 
     /**
      * All sessions with the [UserId] were stopped successfully. This could also mean no sessions
-     * were stopped if the [UserId] had no active sessions.
+     * were stopped if the [UserId] had no active sessions or doesn't exist.
+     */
+    SUCCESS
+  }
+
+  /** Status states for [replaceSession]. */
+  enum class ReplaceSessionStatus {
+    /**
+     * No session was replaced because an error occurred when contacting the database. This could
+     * mean a temporary failure or a permanent one.
+     */
+    DATABASE_ERROR,
+
+    /**
+     * No session was replaced because there was no active session with the given token. This
+     * implies a round-trip to the database was successfully carried out.
+     */
+    TOKEN_NOT_FOUND,
+
+    /**
+     * The session with the passed in token string was successfully replaced by the provided
+     * [UserId].
      */
     SUCCESS
   }
@@ -86,4 +107,7 @@ interface SessionController {
 
   /** Stops all sessions for a [userId]. See [StopAllSessionsForUserIdStatus]. */
   fun stopAllSessionsForUserId(userId: UserId): Status<StopAllSessionsForUserIdStatus>
+
+  /** Replaces the session identified by [token] with the [newUserId]. */
+  fun replaceSession(token: String, newUserId: UserId): Status<ReplaceSessionStatus>
 }

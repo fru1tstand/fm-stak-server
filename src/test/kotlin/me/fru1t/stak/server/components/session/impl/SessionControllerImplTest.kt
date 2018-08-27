@@ -11,6 +11,7 @@ import me.fru1t.stak.server.models.Result
 import me.fru1t.stak.server.models.User
 import me.fru1t.stak.server.models.UserId
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
@@ -19,6 +20,8 @@ import java.util.concurrent.TimeUnit
 class SessionControllerImplTest {
   companion object {
     private val TEST_VALID_USER_ID = UserId("test-valid-username")
+    private val TEST_VALID_USER_ID_2 = UserId("test-valid-username-2")
+    private val TEST_REPLACEMENT_USER_ID = UserId("test-replacement-id")
     private const val TEST_VALID_PASSWORD = "test-valid-password"
     private const val TEST_SESSION_TIMEOUT_HOURS = 1L
   }
@@ -26,11 +29,11 @@ class SessionControllerImplTest {
   @Mock private lateinit var mockDatabase: Database
   private lateinit var fakeSecurity: FakeSecurity
   private lateinit var fakeTicker: FakeTicker
-  private lateinit var sessionControllerImpl: SessionControllerImpl
+  private lateinit var controller: SessionControllerImpl
 
   private lateinit var testValidPasswordHash: String
 
-  @BeforeEach internal fun setUp() {
+  @BeforeEach fun setUp() {
     MockitoAnnotations.initMocks(this)
 
     fakeTicker = FakeTicker()
@@ -38,138 +41,167 @@ class SessionControllerImplTest {
 
     testValidPasswordHash = fakeSecurity.hash(TEST_VALID_PASSWORD)
     whenever(mockDatabase.getUserById(TEST_VALID_USER_ID))
-        .thenReturn(
-            Result(
-                User(TEST_VALID_USER_ID, testValidPasswordHash, "Test display Name"),
-                Database.GetUserByIdStatus.SUCCESS))
+      .thenReturn(
+        Result(
+          User(TEST_VALID_USER_ID, testValidPasswordHash, "Test display Name"),
+          Database.GetUserByIdStatus.SUCCESS))
+    whenever(mockDatabase.getUserById(TEST_VALID_USER_ID_2))
+      .thenReturn(
+        Result(
+          User(TEST_VALID_USER_ID_2, testValidPasswordHash, "Test display Name 2"),
+          Database.GetUserByIdStatus.SUCCESS))
 
-    sessionControllerImpl =
+    controller =
         SessionControllerImpl(mockDatabase, TEST_SESSION_TIMEOUT_HOURS, fakeSecurity, fakeTicker)
   }
 
-  @Test fun login() {
-    val result =
-      sessionControllerImpl.login(
-          UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD))
+  @Nested inner class LoginTest {
+    @Test fun default() {
+      val result =
+        controller.login(UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD))
 
-    assertThat(result.status).isEqualTo(SessionController.LoginStatus.SUCCESS)
-    assertThat(result.value).isNotNull()
-    assertThat(result.value!!.userId).isEqualTo(TEST_VALID_USER_ID)
-  }
+      assertThat(result.status).isEqualTo(SessionController.LoginStatus.SUCCESS)
+      assertThat(result.value).isNotNull()
+      assertThat(result.value!!.userId).isEqualTo(TEST_VALID_USER_ID)
+    }
 
-  @Test fun login_invalidPassword() {
-    val result =
-      sessionControllerImpl.login(
-          UserPasswordCredential(TEST_VALID_USER_ID.username, "invalid pass"))
+    @Test fun invalidPassword() {
+      val result =
+        controller.login(UserPasswordCredential(TEST_VALID_USER_ID.username, "invalid pass"))
 
-    assertThat(result.status).isEqualTo(SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD)
-    assertThat(result.value).isNull()
-  }
+      assertThat(result.status).isEqualTo(SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD)
+      assertThat(result.value).isNull()
+    }
 
-  @Test fun login_invalidUsername() {
-    whenever(mockDatabase.getUserById(UserId("invalid username")))
+    @Test fun invalidUsername() {
+      whenever(mockDatabase.getUserById(UserId("invalid username")))
         .thenReturn(Result(null, Database.GetUserByIdStatus.USER_ID_NOT_FOUND))
-    val result =
-      sessionControllerImpl.login(UserPasswordCredential("invalid username", TEST_VALID_PASSWORD))
+      val result = controller.login(UserPasswordCredential("invalid username", TEST_VALID_PASSWORD))
 
-    assertThat(result.status).isEqualTo(SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD)
-    assertThat(result.value).isNull()
-  }
+      assertThat(result.status).isEqualTo(SessionController.LoginStatus.BAD_USERNAME_OR_PASSWORD)
+      assertThat(result.value).isNull()
+    }
 
-  @Test fun login_databaseError() {
-    whenever(mockDatabase.getUserById(UserId("error")))
+    @Test fun databaseError() {
+      whenever(mockDatabase.getUserById(UserId("error")))
         .thenReturn(Result(null, Database.GetUserByIdStatus.DATABASE_ERROR))
 
-    val result = sessionControllerImpl.login(UserPasswordCredential("error", "password"))
+      val result = controller.login(UserPasswordCredential("error", "password"))
 
-    assertThat(result.status).isEqualTo(SessionController.LoginStatus.DATABASE_ERROR)
-    assertThat(result.value).isNull()
+      assertThat(result.status).isEqualTo(SessionController.LoginStatus.DATABASE_ERROR)
+      assertThat(result.value).isNull()
+    }
   }
 
-  @Test fun logout() {
-    val activeSession =
-      sessionControllerImpl.login(
+  @Nested inner class LogoutTest {
+    @Test fun default() {
+      val activeSession =
+        controller.login(UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD))
+
+      assertThat(controller.logout(activeSession.value!!.token)).isTrue()
+    }
+
+    @Test fun noActiveSession() {
+      assertThat(controller.logout("not a valid token")).isFalse()
+    }
+  }
+
+  @Nested inner class GetActiveSessionTest {
+    @Test fun default() {
+      val activeSession =
+        controller.login(UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD))
+
+      val result = controller.getActiveSession(activeSession.value!!.token)
+
+      assertThat(result.status).isEqualTo(SessionController.GetActiveSessionStatus.SUCCESS)
+      assertThat(result.value).isEqualTo(activeSession.value)
+    }
+
+    @Test fun invalidToken() {
+      val result = controller.getActiveSession("invalid token")
+
+      assertThat(result.status)
+        .isEqualTo(SessionController.GetActiveSessionStatus.SESSION_NOT_FOUND)
+      assertThat(result.value).isNull()
+    }
+
+    @Test fun afterExpiration() {
+      // Set active session
+      val activeSession =
+        controller.login(
           UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD))
 
-    assertThat(sessionControllerImpl.logout(activeSession.value!!.token)).isTrue()
-  }
+      // Advance past timeout
+      fakeTicker.advance(TEST_SESSION_TIMEOUT_HOURS + 1, TimeUnit.HOURS)
 
-  @Test fun logout_noActiveSession() {
-    assertThat(sessionControllerImpl.logout("not a valid token")).isFalse()
-  }
+      // Attempt to fetch previously active session
+      val result = controller.getActiveSession(activeSession.value!!.token)
 
-  @Test fun getActiveSession() {
-    val activeSession =
-      sessionControllerImpl.login(
-          UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD))
-
-    val result = sessionControllerImpl.getActiveSession(activeSession.value!!.token)
-
-    assertThat(result.status).isEqualTo(SessionController.GetActiveSessionStatus.SUCCESS)
-    assertThat(result.value).isEqualTo(activeSession.value)
-  }
-
-  @Test fun getActiveSession_invalidToken() {
-    val result = sessionControllerImpl.getActiveSession("invalid token")
-
-    assertThat(result.status).isEqualTo(SessionController.GetActiveSessionStatus.SESSION_NOT_FOUND)
-    assertThat(result.value).isNull()
-  }
-
-  @Test fun getActiveSession_afterExpiration() {
-    // Set active session
-    val activeSession =
-      sessionControllerImpl.login(
-          UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD))
-
-    // Advance past timeout
-    fakeTicker.advance(TEST_SESSION_TIMEOUT_HOURS + 1, TimeUnit.HOURS)
-
-    // Attempt to fetch previously active session
-    val result = sessionControllerImpl.getActiveSession(activeSession.value!!.token)
-
-    // Verify it doesn't exist
-    assertThat(result.status).isEqualTo(SessionController.GetActiveSessionStatus.SESSION_NOT_FOUND)
-    assertThat(result.value).isNull()
+      // Verify it doesn't exist
+      assertThat(result.status)
+        .isEqualTo(SessionController.GetActiveSessionStatus.SESSION_NOT_FOUND)
+      assertThat(result.value).isNull()
+    }
   }
 
   @Test fun stopAllSessionsForUserId() {
     // Start multiple sessions
     val activeSessions = listOf(
-        sessionControllerImpl.login(
-            UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD)),
-        sessionControllerImpl.login(
-            UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD)),
-        sessionControllerImpl.login(
-            UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD))
+      controller.login(UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD)),
+      controller.login(UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD)),
+      controller.login(UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD))
     )
 
     // Plus an extra one
-    val validSecondUserId = UserId("another username")
-    whenever(mockDatabase.getUserById(validSecondUserId))
-        .thenReturn(
-            Result(
-                User(validSecondUserId, testValidPasswordHash, "Test display Name"),
-                Database.GetUserByIdStatus.SUCCESS))
     val secondActiveSession =
-      sessionControllerImpl.login(
-          UserPasswordCredential(validSecondUserId.username, TEST_VALID_PASSWORD))
+      controller.login(UserPasswordCredential(TEST_VALID_USER_ID_2.username, TEST_VALID_PASSWORD))
 
     // Stop all sessions for the given user
-    sessionControllerImpl.stopAllSessionsForUserId(TEST_VALID_USER_ID)
+    controller.stopAllSessionsForUserId(TEST_VALID_USER_ID)
 
     // Verify all sessions by TEST_VALID_USER_ID have been stopped
     for (activeSession in activeSessions) {
-      val getActiveSessionResult =
-        sessionControllerImpl.getActiveSession(activeSession.value!!.token)
+      val getActiveSessionResult = controller.getActiveSession(activeSession.value!!.token)
       assertThat(getActiveSessionResult.status)
-          .isEqualTo(SessionController.GetActiveSessionStatus.SESSION_NOT_FOUND)
+        .isEqualTo(SessionController.GetActiveSessionStatus.SESSION_NOT_FOUND)
     }
 
     // Verify that the active sessions by other users still exist
-    val getActiveSecondSession =
-        sessionControllerImpl.getActiveSession(secondActiveSession.value!!.token)
+    val getActiveSecondSession = controller.getActiveSession(secondActiveSession.value!!.token)
     assertThat(getActiveSecondSession.status)
-        .isEqualTo(SessionController.GetActiveSessionStatus.SUCCESS)
+      .isEqualTo(SessionController.GetActiveSessionStatus.SUCCESS)
+  }
+
+  @Nested inner class ReplaceSessionTest {
+    @Test fun default() {
+      // Prepare two sessions
+      val activeSessionOne =
+        controller.login(UserPasswordCredential(TEST_VALID_USER_ID.username, TEST_VALID_PASSWORD))
+      val activeSessionTwo =
+        controller.login(UserPasswordCredential(TEST_VALID_USER_ID_2.username, TEST_VALID_PASSWORD))
+
+      // Perform a replacement on the first
+      val resultStatus =
+        controller.replaceSession(activeSessionOne.value!!.token, TEST_REPLACEMENT_USER_ID)
+
+      // Obtain the resulting UserPrincipals of both sessions
+      val resultSessionOneId = controller.getActiveSession(activeSessionOne.value!!.token)
+      val resultSessionTwoId = controller.getActiveSession(activeSessionTwo.value!!.token)
+
+      // Verify that the first session was replaced successfully
+      assertThat(resultStatus.status).isEqualTo(SessionController.ReplaceSessionStatus.SUCCESS)
+      assertThat(resultSessionOneId.value!!.userId).isEqualTo(TEST_REPLACEMENT_USER_ID)
+
+      // And the second session was untouched
+      assertThat(resultSessionTwoId.value!!.userId).isEqualTo(TEST_VALID_USER_ID_2)
+    }
+
+    @Test fun sessionNotFound() {
+      // Perform a replacement on a session that doesn't exist
+      val result =
+        controller.replaceSession("random token that doesn't exist", TEST_REPLACEMENT_USER_ID)
+
+      assertThat(result.status).isEqualTo(SessionController.ReplaceSessionStatus.TOKEN_NOT_FOUND)
+    }
   }
 }
